@@ -1,0 +1,88 @@
+---
+title: "Discrete schedules and categorical representations"
+subtitle: "From time-indexed vectors to Catlab objects"
+format:
+  html:
+    embed-resources: true
+  gfm: default
+  pdf:
+    pdf-engine: xelatex
+    mainfont: "STIX Two Text"
+    mathfont: "STIX Two Math"
+engine: julia
+execute:
+  echo: true
+  warning: false
+---
+
+This vignette shows how to apply interventions to discrete-time schedules and how
+to export program structure to Catlab objects.
+
+```{julia}
+using Catlab: nparts
+using CategoricalInterventions
+using Plots
+
+default(; linewidth=2, markersize=4, grid=false)
+
+beta = Target(
+    :beta;
+    kind=Parameter,
+    value_type=Float64,
+    algebra=MultiplicativeAlgebra(),
+)
+
+program = InterventionProgram(
+    InterventionAtom(:closure, beta, Interval(2, 5), Scale(0.5)),
+)
+
+times = collect(0:6)
+baseline = Dict(:beta => fill(0.30, length(times)))
+
+output = apply_discrete(program, baseline, times)
+collect(zip(times, baseline[:beta], output[:beta]))
+```
+
+The intervention can be viewed as an edit to a time-indexed parameter schedule.
+
+```{julia}
+plot(
+    times,
+    baseline[:beta];
+    label="baseline",
+    marker=:circle,
+    xlabel="time step",
+    ylabel="β",
+    title="Discrete intervention schedule",
+)
+plot!(times, output[:beta]; label="with closure", marker=:square)
+```
+
+The same interval structure can be normalized into epochs and represented as a
+finite function from sampled times to epochs.
+
+```{julia}
+epochs = epochize(program)
+active_times = collect(2:4)
+f = epoch_finfunction(active_times, epochs)
+
+collect(f)
+```
+
+`epoch_finfunction` expects times that lie inside active intervention epochs. For
+times outside those epochs, keep the original schedule values from `apply_discrete`.
+
+The program can also be exported as an attributed C-set.
+
+```{julia}
+acset = as_acset(program)
+
+(
+    atoms = nparts(acset, :Atom),
+    targets = nparts(acset, :TargetObj),
+)
+```
+
+The ACSet representation is useful when interventions should be treated as data:
+for example, for comparing programs, checking structure, or wiring interventions
+into larger categorical model-building workflows.

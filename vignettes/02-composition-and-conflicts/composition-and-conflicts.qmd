@@ -1,0 +1,66 @@
+---
+title: "Composition and conflicts"
+subtitle: "Rules for overlapping interventions"
+format:
+  html:
+    embed-resources: true
+  gfm: default
+  pdf:
+    pdf-engine: xelatex
+    mainfont: "STIX Two Text"
+    mathfont: "STIX Two Math"
+engine: julia
+execute:
+  echo: true
+  warning: false
+---
+
+Interventions on different targets compose freely. Interventions on the same target
+compose only when their intervals are disjoint or the target declares an explicit
+combination algebra.
+
+```{julia}
+using CategoricalInterventions
+
+beta = Target(:beta; kind=Parameter, value_type=Float64)
+
+closure = InterventionAtom(:closure, beta, Interval(10, 30), Scale(0.6))
+mandate = InterventionAtom(:mask_mandate, beta, Interval(20, 40), Scale(0.8))
+
+program = InterventionProgram(closure, mandate)
+conflicts(program)
+```
+
+By default, attempting to compose these two programs throws an
+`InterventionConflictError`, because both modify `:beta` on the overlap `[20, 30)`.
+
+```{julia}
+try
+    compose_interventions(InterventionProgram(closure), InterventionProgram(mandate))
+catch err
+    typeof(err), sprint(showerror, err)
+end
+```
+
+If overlapping effects are meant to combine multiplicatively, declare that on the
+target.
+
+```{julia}
+beta_mult = Target(
+    :beta;
+    kind=Parameter,
+    value_type=Float64,
+    algebra=MultiplicativeAlgebra(),
+)
+
+closure = InterventionAtom(:closure, beta_mult, Interval(10, 30), Scale(0.6))
+mandate = InterventionAtom(:mask_mandate, beta_mult, Interval(20, 40), Scale(0.8))
+
+program = compose_interventions(InterventionProgram(closure), InterventionProgram(mandate))
+applied = apply_interventions(program, Dict(:beta => 0.30))
+
+[(epoch.support, epoch.values[:beta]) for epoch in applied]
+```
+
+The overlap epoch applies both effects, so `0.30 * 0.6 * 0.8 = 0.144`.
+This makes the combination rule explicit rather than silently choosing an order.

@@ -1,0 +1,87 @@
+---
+title: "Core intervention concepts"
+subtitle: "Targets, effects, atoms, programs, and epochs"
+format:
+  html:
+    embed-resources: true
+  gfm: default
+  pdf:
+    pdf-engine: xelatex
+    mainfont: "STIX Two Text"
+    mathfont: "STIX Two Math"
+engine: julia
+execute:
+  echo: true
+  warning: false
+---
+
+This vignette introduces the basic data model in `CategoricalInterventions.jl`.
+An intervention is a local edit to a named target over a half-open interval
+`[start, stop)`.
+
+```{julia}
+using CategoricalInterventions
+
+beta = Target(:beta; kind=Parameter, value_type=Float64)
+gamma = Target(:gamma; kind=Parameter, value_type=Float64)
+
+school_closure = InterventionAtom(
+    :school_closure,
+    beta,
+    Interval(10, 30),
+    Scale(0.6),
+)
+
+case_isolation = InterventionAtom(
+    :case_isolation,
+    gamma,
+    Interval(20, 40),
+    SetValue(0.25),
+)
+
+program = compose_interventions(
+    InterventionProgram(school_closure),
+    InterventionProgram(case_isolation),
+)
+```
+
+The same objects can be written with Unicode constructors and operators. In the
+Julia REPL, type the LaTeX-style name and press TAB, such as `\bbP<TAB>` for `ℙ`
+or `\oplus<TAB>` for `⊕`.
+
+```{julia}
+β = ℙ(:beta; value_type=Float64, algebra=MultiplicativeAlgebra())
+γ = ℙ(:gamma; value_type=Float64)
+
+closure = ι(:school_closure, β, 𝕀(10, 30), κ(0.6))
+isolation = ι(:case_isolation, γ, 𝕀(20, 40), ≜(0.25))
+
+unicode_program = Π(closure) ⊕ isolation
+unicode_program ⊙ Dict(:beta => 0.30, :gamma => 0.10)
+```
+
+Overlapping interventions on different targets are independent. The common
+refinement of their support intervals creates epochs.
+
+```{julia}
+epochs = epochize(program)
+[(epoch.support, collect(keys(epoch.effects))) for epoch in epochs]
+```
+
+Applying a program to a baseline parameter dictionary evaluates the effects in
+each active epoch.
+
+```{julia}
+baseline = Dict(:beta => 0.30, :gamma => 0.10)
+applied = apply_interventions(program, baseline)
+
+[(epoch.support, epoch.values) for epoch in applied]
+```
+
+The key convention is that intervals are half-open: the effect is active at the
+start time and inactive at the stop time.
+
+```{julia}
+CategoricalInterventions.contains_time(Interval(10, 30), 10),
+CategoricalInterventions.contains_time(Interval(10, 30), 30)
+```
