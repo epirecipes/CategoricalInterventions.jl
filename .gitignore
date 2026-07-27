@@ -6,3 +6,9 @@ proofs/lake-manifest.json
 *.jl.*.cov
 *.jl.mem
 .DS_Store
+
+# AI assistant instructions
+CLAUDE.md
+.copilot/
+copilot-instructions.md
+.claude/
