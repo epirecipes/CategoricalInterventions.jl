@@ -8,8 +8,8 @@ time, move people between compartments at an instant, run a vaccination
 campaign as a flow. Interventions compose when they are compatible and are
 rejected with a precise report when they are not. One program applies unchanged
 to any model that exposes its rates and states: an AlgebraicPetri net, a
-StockFlow diagram, an AlgebraicDynamics system, a hand-written ODE, or a
-discrete-time map.
+StockFlow diagram, an AlgebraicDynamics system, a ModelingToolkit system, a
+hand-written ODE, or a discrete-time map.
 
 ```julia
 using CategoricalInterventions
@@ -51,7 +51,8 @@ sol = simulate(model, program; u0=LVector(S=990.0, I=10.0, R=0.0),
   along the projection of a stratified model: define a lockdown once on SIR,
   stratify by age with `stratify`, and `lift` it in one call.
 - **Pulses, flows, invariants.** `transfer` conserves population by
-  construction; flows are realised by augmenting the model with a new process;
+  construction; flows are realised by augmenting the model with a new process
+  (a transition for Petri nets, a wrapped vector field otherwise);
   `Conserved` and `Nonnegative` invariants are checked at every pulse.
 - **Temporal queries.** On a grid window, a program is a subobject of a Catlab
   graph; `describe` reports the five local truth values of Niu et al.'s
@@ -76,7 +77,7 @@ and the lowering algorithm; it does not verify the ODE solver or Catlab.
 | Directory | Contents |
 |---|---|
 | `src/` | the package: supports, algebras, programs, narratives, semantics, models, lowering, transport, DSL, queries, inference |
-| `ext/` | extensions for DiffEqCallbacks, AlgebraicPetri, StockFlow, AlgebraicDynamics, LabelledArrays, ComponentArrays, Plots |
+| `ext/` | extensions for DiffEqCallbacks, AlgebraicPetri, StockFlow, AlgebraicDynamics, ModelingToolkit, LabelledArrays, ComponentArrays, Plots |
 | `proofs/` | Lean 4 + Mathlib proofs; `make build` |
 | `docs/` | Documenter manual; `julia --project=docs docs/make.jl` |
 | `vignettes/` | Quarto vignettes, one structural idea each |

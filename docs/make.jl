@@ -32,6 +32,7 @@ makedocs(;
             "AlgebraicPetri" => "howto/algebraicpetri.md",
             "StockFlow" => "howto/stockflow.md",
             "AlgebraicDynamics" => "howto/algebraicdynamics.md",
+            "ModelingToolkit" => "howto/modelingtoolkit.md",
             "Discrete time" => "howto/discrete.md",
             "Flows and pulses" => "howto/flows.md",
             "Transport and stratification" => "howto/transport.md",

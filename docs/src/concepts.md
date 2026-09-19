@@ -70,5 +70,5 @@ A [`Model`](@ref) wraps a dynamics object from your framework with the
 declared targets, the selectors that locate each target in the integrator's
 `p` and `u`, and the invariants pulses must preserve ([`Conserved`](@ref),
 [`Nonnegative`](@ref)). Extensions build models from AlgebraicPetri nets,
-StockFlow diagrams and AlgebraicDynamics systems; [`simulate`](@ref) solves
+StockFlow diagrams, AlgebraicDynamics systems and ModelingToolkit systems; [`simulate`](@ref) solves
 them with a program attached.

@@ -29,7 +29,7 @@ Design decision (note's open question 1): keep $[a,b)$. Pulses become genuine in
 A **target space** $T$ is a finite set. Each $j \in T$ carries a value object $V_j$ and an **effect algebra** $E_j$, which is a **partial commutative monoid** (PCM) acting on $V_j$:
 
 - a unit $1 \in E_j$ and a partial product $e \cdot e' \in E_j \cup \{\bot\}$ that is commutative and associative where defined, with $1 \cdot e = e$;
-- an action $e \triangleright v \in V_j$ with $1 \triangleright v = v$ and $(e \cdot e') \triangleright v = e \triangleright (e' \triangleright v)$ whenever $e \cdot e'$ is defined.
+- an action $e \triangleright v \in V_j$ with $1 \triangleright v = v$, and, for the *acting* algebras (`Reject`, `Multiplicative`, `Additive`, `Cap`, `Floor`), $(e \cdot e') \triangleright v = e \triangleright (e' \triangleright v)$ whenever $e \cdot e'$ is defined. `Affine` has an action but not this law; see below.
 
 PCMs are the standard structure for "compose when compatible" (they underlie separation logic), and they make the design note's Rules 1 to 4 instances of one definition rather than four special cases. The shipped instances:
 
@@ -41,7 +41,7 @@ PCMs are the standard structure for "compose when compatible" (they underlie sep
 | `Cap` / `Floor` | semilattice | $\min$ / $\max$ | always | $v \mapsto \min(v,e)$ |
 | `Affine(M)` | $\mathrm{Option}(V_j) \times M$ | see below | at most one absolute | see below |
 
-`Affine(M)` is the principled answer to the note's open question 4 (how absolute and relative effects combine). Its elements are an optional absolute value plus a relative effect from a PCM $M$; $(a,m)\cdot(a',m')$ is defined iff $a$ or $a'$ is absent, giving $(a \vee a', m \cdot m')$; and $(a,m) \triangleright v = m \triangleright (a \text{ if present else } v)$. Two overlapping absolute assignments are a conflict (Rule 4); an absolute assignment with any number of scalings is not, and means "set, then scale". This is a PCM, and Lean proves it.
+`Affine(M)` is the principled answer to the note's open question 4 (how absolute and relative effects combine). Its elements are an optional absolute value plus a relative effect from a PCM $M$; $(a,m)\cdot(a',m')$ is defined iff $a$ or $a'$ is absent, giving $(a \vee a', m \cdot m')$; and $(a,m) \triangleright v = m \triangleright (a \text{ if present else } v)$. Two overlapping absolute assignments are a conflict (Rule 4); an absolute assignment with any number of scalings is not, and means "set, then scale". This is a PCM (`affine_pcm`), but its action is *not* a monoid action: the absolute value is applied first and the relative product second regardless of program order (`affine_action`), so $\mathrm{act}(a \cdot b) = \mathrm{act}(a) \circ \mathrm{act}(b)$ holds only when $b$ carries no absolute value (`affine_act_mul_of_relative`). Lean proves exactly these statements.
 
 Ordered policies (`LatestWins`, `HighestPriority`) are **not** PCMs, because they are not commutative. They are shipped as a separate class `OrderedPolicy` whose product uses program order or a priority key from atom metadata, and the documentation states that composition under an ordered policy depends on order. This fixes review finding 6 by making it a type distinction rather than a footnote.
 
@@ -89,7 +89,7 @@ Theorems:
 
 1. **Identity.** $[\,] \triangleright \theta = \theta$.
 2. **Locality.** If no atom is active at $t$ then $(P \triangleright \theta)(t) = \theta(t)$.
-3. **Homomorphism.** If $P \,\#\, Q$ is conflict-free then $(P \,\#\, Q) \triangleright \theta = Q \triangleright (P \triangleright \theta) = P \triangleright (Q \triangleright \theta)$. Composition of programs is composition of their actions, in either order, under PCMs.
+3. **Homomorphism.** If $P \,\#\, Q$ is conflict-free then, for the acting algebras, $(P \,\#\, Q) \triangleright \theta = Q \triangleright (P \triangleright \theta) = P \triangleright (Q \triangleright \theta)$ (`apply_append`). Under `Affine` the composite still does not depend on the order of atoms (`apply_comm`, which holds for every PCM), but sequential application agrees with the composite only when the later program is purely relative (`apply_append_affine`): absolute assignments always apply first.
 4. **Naturality.** For any $r: \tau' \to \tau$, $(P \triangleright \theta) \circ r = (r^*P) \triangleright (\theta \circ r)$, where $r^*P$ has supports $r^{-1}(S_a)$. In words: application commutes with restriction and with resampling. Restriction to a sub-interval is the case $r$ = inclusion, and this is the statement that $P \triangleright -$ is a **natural transformation** of the schedule sheaf $\Theta(I) = \{I \to \prod V_j\}$.
 5. **Grid sampling.** For $r(k) = t_0 + k\Delta$ the preimage of a span is a span with ceiling endpoints, so $r^*P$ is again a program over ℤ. This is the theorem behind `apply_discrete` and behind using one program for both ODE and `FunctionMap` models.
 6. **Piecewise constancy.** If $\theta$ is constant on each epoch of $P$ then so is $P \triangleright \theta$.
@@ -276,7 +276,7 @@ Each theorem name below is the name that appears in the docs ledger and in a Jul
 **`Semantics.lean`**
 
 - `apply P θ` for `ConflictFree P`
-- `apply_nil`, `apply_local`, `apply_append` (homomorphism), `apply_comm`
+- `apply_nil`, `apply_local`, `apply_append` (homomorphism, acting algebras), `apply_append_affine`, `apply_comm`
 - `pullback r P`, `apply_pullback : (apply P θ) ∘ r = apply (pullback r P) (θ ∘ r)` (naturality)
 - `grid_preimage_span` (the ceiling-endpoint formula), `apply_discrete_eq` (corollary)
 - `apply_const_on_epoch`
@@ -372,7 +372,8 @@ What the v0.2 documentation will say, and what backs each statement.
 | Programs compose associatively with an empty identity | `#` | `compose_assoc`, `compose_nil_*` | `laws.jl` |
 | Under a commutative algebra, composition order does not matter | PCM | `fold_perm`, `apply_comm` | `laws.jl` |
 | A program is conflict-free iff every pair of overlapping same-target atoms combines | `conflicts` | `conflictFree_of_pairwise` | `laws.jl` |
-| Set-then-scale is well defined; two sets on one target are a conflict | `Affine` | `affine_pcm` | `algebras.jl` |
+| Set-then-scale is well defined; two sets on one target are a conflict | `Affine` | `affine_pcm`, `fold_affine_isSome_iff` | `core.jl` |
+| Under set-then-scale the absolute value applies first regardless of order | `Affine` | `affine_action`, `affine_act_mul_of_relative` | `laws.jl` |
 | A program is a persistent narrative (sheaf) of atoms in force throughout an interval | `persistent` | `persistent_glue` | `narratives.jl` |
 | A program is a cumulative narrative (cosheaf) of atoms in force at some time in an interval | `cumulative` | `cumulative_inter_eq_point` | `narratives.jl` |
 | Adding atoms only refines epochs | `epochs` | `epochs_refine` | `laws.jl` |
@@ -419,12 +420,19 @@ more than was built.
   schema: by Niu et al. Corollary 2.7 the two are equivalent, and Catlab's
   `Graph` subobjects are well supported. Heyting operations dispatch through
   `ACSetCategory`.
-- **Not implemented:** the ModelingToolkit extension; `augment` for StockFlow
-  and AlgebraicDynamics models (flows there must be written into the model);
-  vignette 08. `infer` merges runs in Julia; the Lean `infer` is the one-atom-
-  per-cell version, proved pointwise at cell starts.
-- **Lean hypotheses.** `conflictFree_lift_iff` needs a surjective
-  projection for one direction; `lift_comp` is functoriality at the level of
+- **ModelingToolkit extension** builds a model from a completed system with
+  symbolic parameter selectors (SymbolicIndexingInterface `getp`/`setp`) and
+  positional states; verified against ModelingToolkit 11.26.8 in a separate
+  environment, since the package test environment does not include it. Flows
+  are not supported there.
+- **`augment` beyond Petri nets** wraps function-valued dynamics (StockFlow
+  vector fields, hand-written ODEs, discrete maps) and converts
+  AlgebraicDynamics systems to functions; only Petri nets get a structural
+  transition. Vignette 08 was not built. `infer` merges runs in Julia; the Lean `infer` is the one-atom-
+  per-cell version, proved at every grid point including the last
+  (`infer_putget_grid_step`).
+- **Lean hypotheses.** `conflictFree_lift_iff'` needs the projection to be
+  surjective onto the targets the program uses (the Julia precondition); `lift_comp` is functoriality at the level of
   folds (the lifted lists are permutations of each other); pairwise-suffices is
   proved per instance (`Reject`, every total PCM, `Affine` over a total PCM).
 - **Discrete pulses** are applied before the step, as planned; this is stated

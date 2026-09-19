@@ -63,6 +63,7 @@ Every theorem below is fully proved, with no placeholder proofs.  Each line is
 * `active_const_on_epoch` : for a span-only program the active set is constant on each epoch.
 * `epochs_refine` : an epoch of `P ++ Q` that meets an epoch of `P` is contained in it.
 * `epochs_refine'` : each epoch of `P ++ Q` is contained in or disjoint from each epoch of `P`.
+* `exists_consecutiveSpan_lo_eq` : every non-final element of a sorted list starts a consecutive span.
 
 ## `Narrative.lean`
 * `persistent_antitone` : the persistent narrative is contravariant.
@@ -90,7 +91,8 @@ Every theorem below is fully proved, with no placeholder proofs.  Each line is
 * `conflictFree_pushforward_of_injOn` : pushforward preserves and reflects conflict-freeness when `f` is injective on the used targets.
 * `foldAt_copies`, `foldAt_lift` : the lifted fold at `j'` is the original fold at `π j'`.
 * `lift_comp` : lift is functorial (at the level of folds).
-* `conflictFree_lift_iff`, `conflictFree_lift` : lift preserves conflict-freeness and reflects it for surjective `π`.
+* `conflictFree_lift_iff'` : lift preserves and reflects conflict-freeness when every target used by `P` has a preimage under `π`.
+* `conflictFree_lift_iff`, `conflictFree_lift` : corollaries: for surjective `π`, and preservation unconditionally.
 * `apply_lift` : the lifted program acts fibrewise.
 
 ## `Lowering.lean`
@@ -110,7 +112,9 @@ Every theorem below is fully proved, with no placeholder proofs.  Each line is
 ## `Infer.lean`
 * `foldAt_infer` : at the start of a cell the inferred fold is the ratio `θ₁/θ₀`.
 * `infer_putget` : put-get: applying the inferred program to `θ₀` gives `θ₁` at the start of every cell.
-* `infer_putget_grid` : put-get on a sorted time grid.
+* `infer_putget_grid` : put-get on a sorted time grid (at the start of each cell).
+* `infer_putget_grid_full` : put-get at every grid point, including the last, when the grid is extended by an end time.
+* `infer_putget_grid_step` : put-get at every point of a real grid whose last cell ends one positive step after the last time.
 -/
 
 import CategoricalInterventionsProofs.Support

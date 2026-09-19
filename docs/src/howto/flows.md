@@ -26,6 +26,11 @@ aug.program          # set(:flow_S_R_campaign, 0.02) during [10, 30)
 aug.extend(p0)       # p0 with the new rate at baseline 0
 ```
 
-Augmentation is implemented for AlgebraicPetri models; the new rate has
-baseline zero, so outside the flow's span the augmented model equals the
-original.
+For an AlgebraicPetri model the augmentation is a new transition in the net.
+For any model whose dynamics is a function (a hand-written ODE, a StockFlow
+vector field, a discrete map) the function is wrapped so that
+`rate * u[from]` leaves `from` and enters `to`; AlgebraicDynamics systems are
+converted to a function first. Positional parameter vectors receive the new
+rate at the next index, so every existing parameter must be declared. In all
+cases the new rate has baseline zero, so outside the flow's span the augmented
+model equals the original.

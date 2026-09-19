@@ -148,6 +148,39 @@ theorem mem_consecutiveSpans_of_sorted {l : List τ} (hl : l.Pairwise (· < ·))
           · intro c hc hbc
             exact hbetween c (List.mem_cons_of_mem _ hc) hbc
 
+/-- Every element of a strictly sorted list that has a successor is the start of
+a consecutive span. -/
+theorem exists_consecutiveSpan_lo_eq {l : List τ} (hl : l.Pairwise (· < ·)) {k : τ}
+    (hk : k ∈ l) (hnext : ∃ m ∈ l, k < m) : ∃ s ∈ consecutiveSpans l, s.lo = k := by
+  induction l with
+  | nil => simp at hk
+  | cons a rest ih =>
+    have ha_lt : ∀ c ∈ rest, a < c := (List.pairwise_cons.mp hl).1
+    have hl' : rest.Pairwise (· < ·) := hl.of_cons
+    obtain ⟨m, hm, hkm⟩ := hnext
+    rcases List.mem_cons.mp hk with hka | hkr
+    · have hm' : m ∈ rest := by
+        rcases List.mem_cons.mp hm with hma | hmr
+        · exact absurd (hka ▸ hma ▸ hkm) (lt_irrefl _)
+        · exact hmr
+      cases rest with
+      | nil => simp at hm'
+      | cons b rest' =>
+        refine ⟨⟨a, b, ha_lt b List.mem_cons_self⟩, ?_, hka.symm⟩
+        rw [consecutiveSpans_cons_cons a b rest' (ha_lt b List.mem_cons_self)]
+        exact List.mem_cons_self
+    · have hm' : m ∈ rest := by
+        rcases List.mem_cons.mp hm with hma | hmr
+        · exact absurd (lt_trans (ha_lt k hkr) (hma ▸ hkm)) (lt_irrefl _)
+        · exact hmr
+      obtain ⟨s, hs, hlo⟩ := ih hl' hkr ⟨m, hm', hkm⟩
+      refine ⟨s, ?_, hlo⟩
+      cases rest with
+      | nil => simp at hkr
+      | cons b rest' =>
+        rw [consecutiveSpans_cons_cons a b rest' (ha_lt b List.mem_cons_self)]
+        exact List.mem_cons_of_mem _ hs
+
 /-- Consecutive spans of a strictly sorted list are pairwise disjoint. -/
 theorem consecutiveSpans_pairwise_disjoint {l : List τ} (hl : l.Pairwise (· < ·)) :
     (consecutiveSpans l).Pairwise Span.Disjoint := by

@@ -49,6 +49,16 @@ end
             inside = [x for x in epochs(p; check=false) if overlaps(x.support, e.support)]
             @test isempty(inside) || (length(inside) == 1 && inside[1].support.lo <= e.support.lo && e.support.hi <= inside[1].support.hi)
         end
+        # epoch_cover and active_const_on_epoch
+        es = epochs(p; check=false)
+        for t in times
+            inside = [e for e in es if t ∈ e.support]
+            covered = any(a -> a.support isa Span && t ∈ a.support, p.atoms)
+            @test length(inside) == (covered ? 1 : 0)
+            for e in inside
+                @test Set(CI.active_spans(p, t)) == Set(e.atoms)
+            end
+        end
         # persistent_glue and cumulative gluing on random closed intervals
         A, C = persistent(p), cumulative(p)
         a = rand(rng, 0:30); pp = a + rand(rng, 0:3); b = pp + rand(rng, 0:3)
@@ -75,6 +85,11 @@ end
                 for k in LAW_TARGETS
                     @test spq[k.name] ≈ after[k.name]
                 end
+            end
+            # apply_const_on_epoch: with a constant baseline the schedule is constant on each epoch
+            for e in epochs(p), k in LAW_TARGETS
+                vals = [sp_[k.name][t + 1] for t in times if t ∈ e.support]
+                @test all(v -> v == vals[1], vals)
             end
             # lower_eq_apply: holding the last event value reproduces the schedule
             baseline = Dict(k.name => base for k in LAW_TARGETS)

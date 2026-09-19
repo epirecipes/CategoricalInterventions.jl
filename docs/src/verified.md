@@ -30,9 +30,10 @@ lowering algorithm; it does not verify the ODE solver or Catlab.
 | Holding each parameter from one event to the next reproduces the schedule (callback correctness) | `lower, hold_last` | `lower_eq_apply` | `test/laws.jl` |
 | Transfers conserve the total | `Transfer` | `transfer_preserves_sum` | `test/models.jl` |
 | Discrete-time pulses are applied before the update | `simulate` | `pulse_before_update`, `discreteStep_no_pulse` | `test/models.jl` |
+| Flows on function-valued models are parameter intervals on a wrapped model | `augment_flow` | `augment_restrict` | `test/models.jl` |
 | Pushforward is functorial and preserves conflict-freeness when injective on the targets used | `pushforward` | `pushforward_comp`, `conflictFree_pushforward_of_injOn` | `test/core.jl` |
-| Lifting to a stratified model is functorial, preserves conflict-freeness, and acts stratum-wise | `lift` | `lift_comp`, `conflictFree_lift_iff`, `apply_lift` | `test/core.jl` |
+| Lifting to a stratified model is functorial, preserves conflict-freeness, and acts stratum-wise | `lift` | `lift_comp`, `conflictFree_lift_iff'`, `apply_lift` | `test/core.jl` |
 | A flow is a parameter intervention on the augmented model, unchanged on the original targets | `augment` | `augment_restrict`, `augment_conflictFree_iff` | `test/models.jl` |
-| Inferring a program from a program's own output returns that output when re-applied | `infer` | `infer_putget`, `infer_putget_grid` | `test/core.jl` |
+| Inferring a program from a program's own output returns that output when re-applied | `infer` | `infer_putget`, `infer_putget_grid_step` | `test/core.jl` |
 
-Theorems in the Lean sources: 148.
+Theorems in the Lean sources: 153.

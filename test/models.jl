@@ -45,6 +45,36 @@ using Catlab.CategoricalAlgebra: ACSetTransformation, dom
     @test it.p ≈ [2.0] && it.u ≈ [12.0]
 end
 
+@testset "Flows on function models" begin
+    sir_ode!(du, u, p, t) = (du[1] = -p[1] * u[1] * u[2]; du[2] = p[1] * u[1] * u[2] - p[2] * u[2]; du[3] = p[2] * u[2]; nothing)
+    m = Model(sir_ode!; parameters=Dict(:inf => 1, :rec => 2), states=Dict(:S => 1, :I => 2, :R => 3),
+              invariants=[Conserved([:S, :I, :R])])
+    camp = Program(m, flow(:S => :R; rate=0.02, during=10.0..30.0, id=:campaign))
+    aug = augment(m, camp)
+    @test aug.model.indexing.parameters[:flow_S_R_campaign] == 3 && aug.extend([0.0005, 0.25]) == [0.0005, 0.25, 0.0]
+    @test aug.program[1].effect == SetValue(0.02) && aug.program[1].target.name == :flow_S_R_campaign
+    u0 = [990.0, 10.0, 0.0]; p0 = [0.0005, 0.25]; tspan = (0.0, 40.0)
+    base = simulate(m, Program(m); u0, p0, tspan, alg=Tsit5(), saveat=0.5)
+    fl = simulate(m, camp; u0, p0, tspan, alg=Tsit5(), saveat=0.5)
+    @test fl[3, end] > base[3, end] && sum(fl.u[end]) ≈ 1000.0
+    # the same flow on a labelled, out-of-place model agrees with the Petri-net augmentation
+    sir_oop(u, p, t) = LVector(S=-p.inf * u.S * u.I, I=p.inf * u.S * u.I - p.rec * u.I, R=p.rec * u.I)
+    ml = Model(sir_oop; parameters=[:inf, :rec], states=[:S, :I, :R])
+    campl = Program(ml, flow(:S => :R; rate=0.02, during=10.0..30.0, id=:campaign))
+    u0l = LVector(S=990.0, I=10.0, R=0.0); p0l = LVector(inf=0.0005, rec=0.25)
+    fll = simulate(ml, campl; u0=u0l, p0=p0l, tspan, alg=Tsit5(), saveat=0.5, abstol=1e-10, reltol=1e-10)
+    sir = LabelledPetriNet([:S, :I, :R], :inf => ((:S, :I) => (:I, :I)), :rec => (:I => :R))
+    mp = Model(sir)
+    flp = simulate(mp, Program(mp, campl.atoms); u0=u0l, p0=p0l, tspan, alg=Tsit5(), saveat=0.5, abstol=1e-10, reltol=1e-10)
+    @test maximum(abs, Array(fll) .- Array(flp)) < 1e-6
+    # discrete models: the flow moves a per-step fraction, and pulses apply before the update
+    double!(du, u, p, t) = (du[1] = 2u[1]; nothing)
+    md = Model(double!; parameters=Dict{Symbol,Int}(), states=Dict(:X => 1), kind=:discrete)
+    sol = simulate(md, Program(md, add(:X, 10.0; at=2.0)); u0=[1.0], p0=Float64[], tspan=(0.0, 4.0), alg=FunctionMap(), dt=1.0)
+    at(t) = sol.u[findlast(==(t), sol.t)][1]
+    @test at(2.0) == 14.0 && at(3.0) == 28.0 && at(4.0) == 56.0   # u(2) = 4 + 10 before the update to step 3
+end
+
 @testset "Callback: baseline capture and reuse" begin
     m = Model(nothing; parameters=Dict(:rate => 1), states=Dict(:X => 1))
     prog = Program(m, scale(:rate, 0.5; during=-1.0..1.0, id=:pre))

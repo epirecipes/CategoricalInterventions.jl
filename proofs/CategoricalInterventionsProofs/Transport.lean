@@ -167,17 +167,27 @@ theorem lift_comp {T'' : Type*} [DecidableEq T''] [Fintype T'']
   rw [foldAt_lift, foldAt_lift, foldAt_lift]
   rfl
 
-/-- **Lift preserves conflict-freeness**, and reflects it when `π` is surjective. -/
-theorem conflictFree_lift_iff {π : T' → T} (hπ : Function.Surjective π) (P : Program τ T M) :
+/-- **Lift preserves conflict-freeness**, and reflects it when every target *used*
+by `P` has a preimage under `π` (the condition the Julia `lift` checks). -/
+theorem conflictFree_lift_iff' {π : T' → T} (P : Program τ T M)
+    (hπ : ∀ j ∈ targets P, ∃ j', π j' = j) :
     ConflictFree (lift π P) ↔ ConflictFree P := by
   constructor
   · intro h t j
-    obtain ⟨j', rfl⟩ := hπ j
-    rw [← foldAt_lift π P j' t]
-    exact h t j'
+    by_cases hj : j ∈ targets P
+    · obtain ⟨j', rfl⟩ := hπ j hj
+      rw [← foldAt_lift π P j' t]
+      exact h t j'
+    · rw [foldAt_eq_one_of_none j P t (fun a ha _ e => hj ⟨a, ha, e⟩)]
+      rfl
   · intro h t j'
     rw [foldAt_lift]
     exact h t (π j')
+
+/-- Corollary: lift preserves and reflects conflict-freeness when `π` is surjective. -/
+theorem conflictFree_lift_iff {π : T' → T} (hπ : Function.Surjective π) (P : Program τ T M) :
+    ConflictFree (lift π P) ↔ ConflictFree P :=
+  conflictFree_lift_iff' P (fun j _ => hπ j)
 
 theorem conflictFree_lift {π : T' → T} {P : Program τ T M} (h : ConflictFree P) :
     ConflictFree (lift π P) := by

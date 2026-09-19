@@ -174,7 +174,7 @@ end
 
 Add a transition `from → to` named `rate_name` to the model's Petri net.
 """
-function CI.augment_flow(m::Model, from::Symbol, to::Symbol, rate_name::Symbol)
+function CI._augment_flow(::Val{:AlgebraicPetri}, m::Model, from::Symbol, to::Symbol, rate_name::Symbol)
     haskey(m.metadata, :petri) || error("augment_flow needs a model built from an AlgebraicPetri net")
     pn = copy(m.metadata[:petri])
     s_from = findfirst(==(from), _species_labels(pn)); s_to = findfirst(==(to), _species_labels(pn))

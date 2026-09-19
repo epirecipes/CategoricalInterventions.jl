@@ -8,6 +8,10 @@
     @test CI.covers_closed(a, 10, 29) && !CI.covers_closed(a, 10, 30)
     @test CI.meets_closed(a, 30, 35) == false && CI.meets_closed(a, 29, 35)
     @test Interval(1, 2) == Span(1, 2)
+    # support_ordConnected: supports are order-convex
+    for s in (Span(3, 9), Instant(4)), x in 0:10, z in x:10, y in x:z
+        (x ∈ s && z ∈ s) && @test y ∈ s
+    end
 end
 
 @testset "Effects and algebras" begin

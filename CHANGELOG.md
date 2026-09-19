@@ -15,7 +15,8 @@ implementation notes.
   AlgebraicDynamics systems, or plain functions; `Conserved` and
   `Nonnegative` invariants.
 - `Instant` supports for pulses; `Transfer` (one-atom conserving move) and
-  `Flow` (realised by `augment`).
+  `Flow` (realised by `augment`: a new transition for Petri nets, a wrapped
+  vector field for function-valued and AlgebraicDynamics models).
 - Plain constructors `scale`, `set`, `add`, `cap`, `floor_at`, `custom`,
   `transfer`, `flow`, and the `@interventions` block; `explain`, `table`,
   `plot`.
@@ -28,7 +29,7 @@ implementation notes.
 - `infer`: recover a program from a baseline and an observed schedule.
 - Lean 4 + Mathlib proofs (148 theorems) and a generated claims ledger in
   the documentation; property tests mirroring the theorems.
-- Extensions for LabelledArrays, ComponentArrays, Plots.
+- Extensions for ModelingToolkit (symbolic parameter selectors), LabelledArrays, ComponentArrays, Plots.
 
 ### Changed
 - Conflict reports name both atoms, the overlap, and a resolving algebra.

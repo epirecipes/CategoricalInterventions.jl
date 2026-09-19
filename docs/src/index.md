@@ -24,6 +24,7 @@ documentation makes with the theorem behind it.
   epochs, in plain language.
 - How-to guides for [AlgebraicPetri](@ref howto-algebraicpetri),
   [StockFlow](@ref howto-stockflow), [AlgebraicDynamics](@ref howto-algebraicdynamics),
+  [ModelingToolkit](@ref howto-modelingtoolkit),
   [discrete-time models](@ref howto-discrete), [flows](@ref howto-flows),
   [transport and stratification](@ref howto-transport), [temporal queries](@ref howto-queries),
   and [inferring interventions](@ref howto-infer).
@@ -50,5 +51,5 @@ Pkg.develop(path="path/to/CategoricalInterventions.jl")
 
 Load the extensions you need by loading their packages: `DiffEqCallbacks`
 (with an integrator such as `OrdinaryDiffEq`) for simulation,
-`AlgebraicPetri`, `StockFlow`, or `AlgebraicDynamics` for model construction,
+`AlgebraicPetri`, `StockFlow`, `AlgebraicDynamics`, or `ModelingToolkit` for model construction,
 and `Plots` for Gantt charts.

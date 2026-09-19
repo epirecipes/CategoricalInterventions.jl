@@ -8,6 +8,15 @@ the declared targets, the selectors that locate each target in the integrator's
 from AlgebraicPetri nets, StockFlow diagrams, and AlgebraicDynamics systems.
 """
 
+"""
+    _getp(container, selector), _setp!(container, selector, value)
+
+Read and write one entry of a parameter or state container. Defaults to
+indexing; extensions add symbolic selectors (ModelingToolkit).
+"""
+_getp(x, sel) = x[sel]
+_setp!(x, sel, v) = (x[sel] = v; x)
+
 # ------------------------------------------------------------- invariants ---
 
 abstract type AbstractInvariant end
@@ -184,13 +193,13 @@ function check_invariants(m::Model, u_before, u_after; atol=1e-8)
     for inv in m.invariants
         if inv isa Conserved
             sel = [m.indexing.states[s] for s in inv.states]
-            before = sum(u_before[s] for s in sel)
-            after = sum(u_after[s] for s in sel)
+            before = sum(_getp(u_before, s) for s in sel)
+            after = sum(_getp(u_after, s) for s in sel)
             isapprox(before, after; atol=atol * max(1, abs(before))) ||
                 throw(InvariantViolation(inv, "sum of $(inv.states) changed from $before to $after"))
         elseif inv isa Nonnegative
             for s in inv.states
-                v = u_after[m.indexing.states[s]]
+                v = _getp(u_after, m.indexing.states[s])
                 v >= 0 || throw(InvariantViolation(inv, "state $s became negative ($v)"))
             end
         end
@@ -253,18 +262,63 @@ function conserves_tokens end
 """
     augment_flow(model, from, to, rate_name) -> Model
 
-Extension hook: return a model with an added process moving `from` to `to` at
-the per-capita rate named `rate_name`, whose baseline value is zero.
+Return a model with an added process moving `from` to `to` at the per-capita
+rate named `rate_name`, whose baseline value is zero. AlgebraicPetri models get
+a new transition; models whose dynamics is a function (hand-written ODEs,
+StockFlow vector fields, discrete maps) get a wrapped function that subtracts
+`rate * u[from]` from `from` and adds it to `to`; AlgebraicDynamics systems
+are converted to a function first. Positional parameter vectors receive the
+new rate at the next index, so every existing parameter must be declared.
+Extensions specialise `_augment_flow(::Val{source}, ...)`.
 """
-function augment_flow end
+augment_flow(m::Model, from::Symbol, to::Symbol, rate_name::Symbol) =
+    _augment_flow(Val(get(m.metadata, :source, :function)), m, from, to, rate_name)
+
+function _augment_flow(::Val, m::Model, from::Symbol, to::Symbol, rate_name::Symbol)
+    f = m.dynamics
+    f isa Function || error("augment_flow is available for function-valued dynamics, AlgebraicPetri, and " *
+                            "AlgebraicDynamics models; got $(typeof(f))")
+    haskey(m.indexing.states, from) && haskey(m.indexing.states, to) ||
+        error("Flow endpoints $from → $to are not states of the model")
+    s_from, s_to = m.indexing.states[from], m.indexing.states[to]
+    positional = all(v -> v isa Integer, values(m.indexing.parameters))
+    rate_sel = positional ? (isempty(m.indexing.parameters) ? 1 : maximum(values(m.indexing.parameters)) + 1) : rate_name
+    inplace = hasmethod(f, Tuple{Any,Any,Any,Any})
+    g = if inplace
+        function (du, u, p, t)
+            f(du, u, p, t)
+            r = p[rate_sel] * u[s_from]
+            du[s_from] -= r
+            du[s_to] += r
+            return nothing
+        end
+    else
+        function (u, p, t)
+            du = copy(f(u, p, t))
+            r = p[rate_sel] * u[s_from]
+            du[s_from] -= r
+            du[s_to] += r
+            return du
+        end
+    end
+    params = copy(m.indexing.parameters); params[rate_name] = rate_sel
+    indexing = Indexing(params, copy(m.indexing.states), vcat(m.indexing.parameter_names, rate_name),
+                        copy(m.indexing.state_names))
+    space = TargetSpace(copy(m.space.specs), m.space.default)
+    declare!(space, Target(rate_name, Parameter), Affine(Multiplicative()); value_type=Float64)
+    metadata = merge(m.metadata, Dict{Symbol,Any}(:source => :function, :augmented => true))
+    return Model(g, space, indexing, copy(m.invariants), m.kind, metadata)
+end
 
 """
-    extend_parameters(model, p0, additions::Dict{Symbol,<:Real})
+    extend_parameters(model, p0, additions::AbstractVector{<:Pair{Symbol}})
 
-Extension hook: return a parameter container like `p0` extended with the given
-named entries.
+Return a parameter container like `p0` extended with the given named entries,
+in order. Plain vectors are appended to; labelled containers gain labels.
 """
-function extend_parameters end
+function extend_parameters(::Model, p0::Vector, additions::AbstractVector{<:Pair})
+    return vcat(p0, [Float64(v) for (_, v) in additions])
+end
 
 """
     augment(model, program) -> (model=..., program=..., extend=p0 -> p0′)
@@ -277,13 +331,13 @@ has baseline zero, so outside the span the augmented model equals the original
 function augment(m::Model, p::Program)
     model = m
     atoms = Atom[]
-    additions = Dict{Symbol,Float64}()
+    additions = Pair{Symbol,Float64}[]
     for a in p.atoms
         if a.effect isa Flow
             from, to = a.target.name, a.effect.to
             rate_name = Symbol("flow_", from, "_", to, "_", a.id)
             model = augment_flow(model, from, to, rate_name)
-            additions[rate_name] = 0.0
+            push!(additions, rate_name => 0.0)
             push!(atoms, Atom(a.id, Target(rate_name, Parameter), a.support, SetValue(a.effect.rate), a.metadata))
         else
             push!(atoms, a)

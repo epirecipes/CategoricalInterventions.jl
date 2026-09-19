@@ -78,18 +78,18 @@ Reset the program's parameter targets to `baseline_p`, then apply the effects
 active at `t`. Untargeted entries are untouched so independent callbacks
 compose.
 """
-function apply_parameter_effects!(pvec::AbstractVector, prog::Program, m, baseline_p::AbstractVector, t;
-                                  check::Bool=true)
+function apply_parameter_effects!(pvec, prog::Program, m, baseline_p, t; check::Bool=true)
     ix = _indexing(m)
-    length(pvec) == length(baseline_p) || error("Parameter vector and baseline_p lengths differ")
+    pvec isa AbstractVector && baseline_p isa AbstractVector && length(pvec) != length(baseline_p) &&
+        error("Parameter vector and baseline_p lengths differ")
     for target in parameter_targets(prog)
         sel = _parameter_selector(ix, target)
         _check_container(pvec, sel, "integrator.p")
-        pvec[sel] = baseline_p[sel]
+        _setp!(pvec, sel, _getp(baseline_p, sel))
     end
     for (target, eff) in active_parameter_effects(prog, t; check)
         sel = _parameter_selector(ix, target)
-        pvec[sel] = _apply_checked(prog, target, eff, baseline_p[sel])
+        _setp!(pvec, sel, _apply_checked(prog, target, eff, _getp(baseline_p, sel)))
     end
     return pvec
 end
@@ -100,7 +100,7 @@ end
 Apply the pulses scheduled at `t` to the state vector, then check the model's
 invariants.
 """
-function apply_state_pulses!(u::AbstractVector, prog::Program, m, t; check::Bool=true)
+function apply_state_pulses!(u, prog::Program, m, t; check::Bool=true)
     ix = _indexing(m)
     pulses = state_pulses_at(prog, t; check)
     isempty(pulses) && return u
@@ -108,7 +108,7 @@ function apply_state_pulses!(u::AbstractVector, prog::Program, m, t; check::Bool
     for (target, eff) in pulses
         sel = _state_selector(ix, target)
         _check_container(u, sel, "integrator.u")
-        u[sel] = _apply_checked(prog, target, eff, u[sel])
+        _setp!(u, sel, _apply_checked(prog, target, eff, _getp(u, sel)))
     end
     m isa Model && check_invariants(m, before, u)
     return u
@@ -121,10 +121,8 @@ Mutate a SciML-style integrator in place at event time `t`.
 """
 function apply_to_integrator!(integrator, prog::Program, m, t; baseline_p=nothing, check::Bool=true)
     if baseline_p !== nothing
-        integrator.p isa AbstractVector || error("integrator.p must be a mutable vector; got $(typeof(integrator.p))")
         apply_parameter_effects!(integrator.p, prog, m, baseline_p, t; check)
     end
-    integrator.u isa AbstractVector || error("integrator.u must be a mutable vector; got $(typeof(integrator.u))")
     apply_state_pulses!(integrator.u, prog, m, t; check)
     return integrator
 end

@@ -55,7 +55,8 @@ function CI.simulate(m::Model, program::Program; u0, p0, tspan, alg=nothing, kwa
         aug = CI.augment(m, program)
         m, program, p0 = aug.model, aug.program, aug.extend(p0)
     end
-    cb = CI.to_callback(program, m; baseline_p=p0)
+    capture = get(m.metadata, :baseline_from_integrator, false)
+    cb = CI.to_callback(program, m; baseline_p=capture ? nothing : p0)
     prob = m.kind == :discrete ? SciMLBase.DiscreteProblem(m.dynamics, u0, tspan, p0) :
                                  SciMLBase.ODEProblem(m.dynamics, u0, tspan, p0)
     return alg === nothing ? SciMLBase.solve(prob; callback=cb, kwargs...) :
