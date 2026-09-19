@@ -111,6 +111,11 @@ struct Flow{T} <: AbstractEffect
     rate::T
 end
 
+"""
+    apply_effect(effect, value)
+
+Apply an effect to a value.
+"""
 apply_effect(::Identity, v) = v
 apply_effect(e::SetValue, v) = e.value
 apply_effect(e::Add, v) = v + e.delta

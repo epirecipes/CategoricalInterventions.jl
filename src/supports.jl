@@ -39,6 +39,11 @@ struct Instant{T} <: AbstractSupport{T}
     t::T
 end
 
+"""
+    lo .. hi
+
+The span `[lo, hi)`; the same as `Span(lo, hi)`.
+"""
 const (..) = Span
 
 """
@@ -56,10 +61,21 @@ Base.:(==)(a::Instant, b::Instant) = a.t == b.t
 Base.hash(s::Span, h::UInt) = hash((:span, s.lo, s.hi), h)
 Base.hash(s::Instant, h::UInt) = hash((:instant, s.t), h)
 
+"""
+    contains_time(support, t) -> Bool
+    t ∈ support
+
+Is `t` in the support?
+"""
 contains_time(s::Span, t) = s.lo <= t < s.hi
 contains_time(s::Instant, t) = s.t == t
 Base.in(t, s::AbstractSupport) = contains_time(s, t)
 
+"""
+    overlaps(a, b) -> Bool
+
+Do two supports share a time?
+"""
 overlaps(a::Span, b::Span) = a.lo < b.hi && b.lo < a.hi
 overlaps(a::Span, b::Instant) = contains_time(a, b.t)
 overlaps(a::Instant, b::Span) = overlaps(b, a)
@@ -98,6 +114,11 @@ persistent narrative.
 covers_closed(s::Span, lo, hi) = s.lo <= lo && hi < s.hi
 covers_closed(s::Instant, lo, hi) = lo == hi == s.t
 
+"""
+    endpoints(support)
+
+The event times of a support: `(lo, hi)` for a span, `(t,)` for an instant.
+"""
 endpoints(s::Span) = (s.lo, s.hi)
 endpoints(s::Instant) = (s.t,)
 isspan(::Span) = true

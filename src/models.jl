@@ -33,6 +33,11 @@ end
 Base.:(==)(a::Conserved, b::Conserved) = a.states == b.states
 Base.:(==)(a::Nonnegative, b::Nonnegative) = a.states == b.states
 
+"""
+    InvariantViolation
+
+Thrown when a pulse breaks one of the model's invariants.
+"""
 struct InvariantViolation <: Exception
     invariant::AbstractInvariant
     message::String
@@ -105,7 +110,18 @@ end
 Base.show(io::IO, m::Model) = print(io, "Model(", length(m.indexing.parameters), " parameters, ",
                                     length(m.indexing.states), " states, ", m.kind, ")")
 
+"""
+    parameters(model)
+
+Names of the model's parameter-like targets.
+"""
 parameters(m::Model) = collect(keys(m.indexing.parameters))
+
+"""
+    states(model)
+
+Names of the model's state targets.
+"""
 states(m::Model) = collect(keys(m.indexing.states))
 targets(m::Model) = targets(m.space)
 
@@ -125,6 +141,12 @@ A program whose declaration table is the model's.
 """
 Program(m::Model, atoms::Atom...) = Program(collect(atoms); space=m.space)
 Program(m::Model, atoms::AbstractVector{<:Atom}) = Program(collect(atoms); space=m.space)
+
+"""
+    program(model, atoms...)
+
+A program whose declaration table is the model's.
+"""
 program(m::Model, atoms...) = Program(m, atoms...)
 
 """
@@ -198,11 +220,17 @@ Extension hook: the typing morphism of a net into a type system.
 function typed_by end
 
 """
-    dom(morphism), codom(morphism)
+    dom(morphism)
 
-Domain and codomain of a model morphism.
+Domain of a model morphism.
 """
 function dom end
+
+"""
+    codom(morphism)
+
+Codomain of a model morphism.
+"""
 function codom end
 
 """

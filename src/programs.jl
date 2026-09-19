@@ -4,6 +4,13 @@ Targets, atoms, programs, conflicts, composition, and epochs.
 
 # ---------------------------------------------------------------- targets ---
 
+"""
+    TargetKind
+
+The kind of a target: `Parameter`, `State`, `Process`, or `Observation`.
+Parameter-like kinds are interval effects on the schedule; `State` targets take
+pulses and flows.
+"""
 @enum TargetKind Parameter State Process Observation
 
 @doc "Target kind for model parameters or rates." Parameter
@@ -69,8 +76,26 @@ declare!(space::TargetSpace, name::Symbol, algebra::AbstractAlgebra; kind::Targe
     declare!(space, Target(name, kind), algebra; kw...)
 
 spec(space::TargetSpace, t::Target) = get(space.specs, t, TargetSpec(Any, space.default))
+
+"""
+    algebra(space_or_program, target)
+
+The combination algebra declared for a target (the default if undeclared).
+"""
 algebra(space::TargetSpace, t::Target) = spec(space, t).algebra
+
+"""
+    value_type(space, target)
+
+The value type declared for a target (`Any` if undeclared).
+"""
 value_type(space::TargetSpace, t::Target) = spec(space, t).value_type
+
+"""
+    targets(space_or_model)
+
+The declared targets.
+"""
 targets(space::TargetSpace) = collect(keys(space.specs))
 
 """
@@ -411,6 +436,11 @@ function _fold_all(p::Program, atoms::AbstractVector{<:Atom})
     return out
 end
 
+"""
+    boundaries(program)
+
+The sorted span endpoints of a program; consecutive pairs are the epochs.
+"""
 boundaries(p::Program) = sort!(unique!([b for a in p.atoms if a.support isa Span for b in endpoints(a.support)]))
 
 """

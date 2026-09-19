@@ -15,26 +15,31 @@ for `a ≤ p ≤ b`. Evaluate a narrative by calling it: `A(lo, hi)`, `A(t)`.
 
 abstract type AbstractNarrative end
 
+struct PersistentNarrative <: AbstractNarrative
+    program::Program
+end
+
 """
     persistent(program)
 
 The persistent narrative: `A(lo, hi)` is the vector of atoms whose support
-contains all of `[lo, hi]`; `A(t)` is the atoms active at `t`.
+contains all of `[lo, hi]`; `A(t)` is the atoms active at `t`. Satisfies
+`A[a,b] = A[a,p] ∩ A[p,b]` (Lean: `persistent_glue`).
 """
-struct PersistentNarrative <: AbstractNarrative
+persistent(p::Program) = PersistentNarrative(p)
+
+struct CumulativeNarrative <: AbstractNarrative
     program::Program
 end
-persistent(p::Program) = PersistentNarrative(p)
 
 """
     cumulative(program)
 
 The cumulative narrative: `C(lo, hi)` is the vector of atoms whose support meets
-`[lo, hi]`; `C(t)` is the atoms active at `t`.
+`[lo, hi]`; `C(t)` is the atoms active at `t`. Satisfies
+`C[a,b] = C[a,p] ∪ C[p,b]` and `C[a,p] ∩ C[p,b] = C[p,p]` (Lean:
+`cumulative_union`, `cumulative_inter_eq_point`).
 """
-struct CumulativeNarrative <: AbstractNarrative
-    program::Program
-end
 cumulative(p::Program) = CumulativeNarrative(p)
 
 (n::PersistentNarrative)(lo, hi) = Atom[a for a in n.program.atoms if covers_closed(a.support, lo, hi)]
