@@ -96,7 +96,9 @@ julia --project=docs docs/make.jl
 cd vignettes/01-getting-started && JULIA_PROJECT=.. quarto render getting-started.qmd
 ```
 
-StockFlow.jl requires Julia 1.11; the vignette that uses it pins that version.
+The package requires Julia 1.11 or later: Catlab 0.17's pullbacks, used by
+`stratify`, fail on Julia 1.10. StockFlow.jl supports Julia 1.11 only, so the
+vignette that uses it pins that version.
 
 ## Status
 

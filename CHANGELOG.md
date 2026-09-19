@@ -32,6 +32,7 @@ implementation notes.
 - Extensions for ModelingToolkit (symbolic parameter selectors), LabelledArrays, ComponentArrays, Plots.
 
 ### Changed
+- Requires Julia 1.11 (Catlab 0.17 pullbacks fail on 1.10).
 - Conflict reports name both atoms, the overlap, and a resolving algebra.
 - `epochs(check=false)` records conflicts instead of throwing.
 - The callback captures its baseline per solve and releases it afterwards.
