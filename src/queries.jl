@@ -16,8 +16,15 @@ vertices and the edge.
 """
 
 using Catlab.Graphs: Graph, add_vertices!, add_edges!, nv, ne
-using Catlab.CategoricalAlgebra: Subobject, components, predicate, force, ACSetCategory
+using Catlab.CategoricalAlgebra: Subobject, components, predicate, force
 import Catlab.CategoricalAlgebra: implies, meet, join, negate, ⟹, ∧, ∨, ¬
+
+# Catlab ≥ 0.16 dispatches the Heyting operations through an explicit category
+# model; earlier versions dispatch on the subobjects directly.
+const _ACSetCategory = isdefined(Catlab.CategoricalAlgebra, :ACSetCategory) ?
+                       getproperty(Catlab.CategoricalAlgebra, :ACSetCategory) : nothing
+_category(g) = _ACSetCategory === nothing ? nothing : _ACSetCategory(g)
+_with(op, cat, args...) = cat === nothing ? op(args...) : op[cat](args...)
 
 """
     NarrativeWindow(targets, times)
@@ -50,7 +57,7 @@ function NarrativeWindow(targets::AbstractVector{Target}, times::AbstractVector)
             edge[(j, k)] = e
         end
     end
-    return NarrativeWindow(collect(targets), ts, g, vertex, edge, ACSetCategory(g))
+    return NarrativeWindow(collect(targets), ts, g, vertex, edge, _category(g))
 end
 
 Base.show(io::IO, w::NarrativeWindow) =
@@ -102,12 +109,12 @@ for (op, name) in ((:meet, :∧), (:join, :∨), (:implies, :⟹))
     @eval begin
         function $op(a::NarrativeSubobject, b::NarrativeSubobject)
             a.window === b.window || error("subobjects live on different windows")
-            NarrativeSubobject(a.window, $op[a.window.category](a.sub, b.sub))
+            NarrativeSubobject(a.window, _with($op, a.window.category, a.sub, b.sub))
         end
         $name(a::NarrativeSubobject, b::NarrativeSubobject) = $op(a, b)
     end
 end
-negate(a::NarrativeSubobject) = NarrativeSubobject(a.window, negate[a.window.category](a.sub))
+negate(a::NarrativeSubobject) = NarrativeSubobject(a.window, _with(negate, a.window.category, a.sub))
 ¬(a::NarrativeSubobject) = negate(a)
 
 """

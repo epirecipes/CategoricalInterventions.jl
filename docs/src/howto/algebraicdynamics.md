@@ -6,7 +6,8 @@ state vector, so name the states in order and label the parameters with a
 
 ```julia
 using CategoricalInterventions, AlgebraicDynamics, Catlab, ComponentArrays, OrdinaryDiffEq, DiffEqCallbacks
-using Catlab.Programs, Catlab.WiringDiagrams: oapply
+using Catlab.Programs
+using Catlab.WiringDiagrams: oapply
 
 infection = ContinuousResourceSharer{Float64}(2, (u, p, t) -> (r = p.inf * u[1] * u[2]; [-r, r]))
 recovery  = ContinuousResourceSharer{Float64}(2, (u, p, t) -> (r = p.rec * u[1]; [-r, r]))

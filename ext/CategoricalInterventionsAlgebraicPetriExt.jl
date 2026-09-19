@@ -118,7 +118,7 @@ function CI.Model(pn::AbstractLabelledPetriNet; kind::Symbol=:continuous, invari
                   rate_algebra=Affine(Multiplicative()), state_algebra=Additive(), value_type::Type=Float64)
     flat = all(x -> x isa Symbol, snames(pn)) && all(x -> x isa Symbol, tnames(pn)) ? pn : flatten_labels(pn)
     sn, tn = _species_labels(flat), _transition_labels(flat)
-    inv = invariants === nothing ? (CI.conserves_tokens(flat) ? [Conserved(sn)] : AbstractInvariant[]) : invariants
+    inv = invariants === nothing ? (CI.conserves_tokens(flat) ? [Conserved(sn)] : CI.AbstractInvariant[]) : invariants
     return Model(vectorfield(flat); parameters=tn, states=sn, kind, invariants=inv, rate_algebra, state_algebra,
                  value_type, metadata=Dict{Symbol,Any}(:petri => flat, :original => pn, :source => :AlgebraicPetri))
 end
