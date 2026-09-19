@@ -4,39 +4,24 @@
 CurrentModule = CategoricalInterventions
 ```
 
-The package provides ContACT.jl-style Unicode shorthand for common constructors
-and operations. These aliases are thin wrappers over the standard API.
+Thin aliases over the plain API. Type the LaTeX name and TAB.
 
-| Symbol | LaTeX tab completion | Meaning |
-| --- | --- | --- |
-| [`ℙ`](@ref) | `\bbP<TAB>` | parameter target |
-| [`𝕊`](@ref) | `\bbS<TAB>` | state target |
-| [`𝕀`](@ref) | `\bbI<TAB>` | half-open interval |
-| [`ι`](@ref) | `\iota<TAB>` | intervention atom |
-| [`Π`](@ref) | `\Pi<TAB>` | intervention program |
-| [`≜`](@ref) | `\triangleq<TAB>` | absolute assignment effect |
-| [`δ`](@ref) | `\delta<TAB>` | additive effect |
-| [`κ`](@ref) | `\kappa<TAB>` | multiplicative scale effect |
-| [`⊕`](@ref) | `\oplus<TAB>` | program or atom composition |
-| [`⊙`](@ref) | `\odot<TAB>` | apply a program |
-
-Example:
+| Symbol | LaTeX | Meaning |
+|---|---|---|
+| [`ℙ`](@ref) | `\bbP` | parameter target |
+| [`𝕊`](@ref) | `\bbS` | state target |
+| [`𝕀`](@ref) | `\bbI` | span |
+| [`ι`](@ref) | `\iota` | atom |
+| [`Π`](@ref) | `\Pi` | program |
+| [`≜`](@ref), [`δ`](@ref), [`κ`](@ref) | `\triangleq`, `\delta`, `\kappa` | set, add, scale |
+| [`⊕`](@ref) | `\oplus` | compose |
+| [`⊙`](@ref) | `\odot` | apply |
 
 ```julia
-β = ℙ(:beta; value_type=Float64, algebra=MultiplicativeAlgebra())
-closure = ι(:closure, β, 𝕀(10.0, 30.0), κ(0.6))
-program = Π(closure)
-program ⊙ Dict(:beta => 0.30)
+β = ℙ(:beta)
+closure = ι(:closure, β, 𝕀(10, 30), κ(0.6))
+Π(closure) ⊙ Dict(:beta => 0.30)
 ```
-
-The package also extends interval containment and intersection:
-
-```julia
-10.0 ∈ 𝕀(10.0, 30.0)
-𝕀(10.0, 30.0) ∩ 𝕀(20.0, 40.0)
-```
-
-## Unicode API
 
 ```@docs
 ℙ

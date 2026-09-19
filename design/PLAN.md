@@ -394,3 +394,38 @@ Statements deliberately **not** claimed: that the sheaf topos structure is forma
 - **Scope creep toward a general hybrid-systems library.** Flows are handled by augmentation only; arbitrary vector-field edits (the note's "vector-field interval") are a non-goal for v0.2.
 - **Individual-level models.** Vignette 08 shows the idea on the paper's temporal graphs but no ABM integration is promised.
 - **Uncertainty and provenance.** Metadata carries provenance and priority; only `OrderedPolicy` reads it. Probabilistic effects are out of scope.
+
+# Implementation notes (v0.2.0, 2026-09-19)
+
+Deviations from the plan above, recorded so the documentation never claims
+more than was built.
+
+- **`Affine` is a PCM but not a monoid action.** The action law
+  `act(a·b) = act a ∘ act b` is false when one factor is absolute. The law
+  that holds, and is proved (`affine_action`), is "absolute first, then the
+  product of the relative parts". Consequently the sequential homomorphism
+  `(P ⊕ Q) ▷ θ = Q ▷ (P ▷ θ)` holds under `Affine` only when `Q` is purely
+  relative (`apply_append_affine`); the order-independence theorem
+  (`apply_comm`) holds for every PCM. Section 2.2 and 2.5 should be read with
+  this correction.
+- **Stratification uses untyped pullbacks.** AlgebraicPetri 0.10's
+  `typed_product` fails under Catlab 0.17 (attribute components of typed
+  nets). `stratify(base, strata, types, base_types, strata_types)` types the
+  untyped copies of the nets positionally, takes the pullback with
+  `pullback[ACSetCategory(...)]`, relabels with tuple names, and returns a
+  lightweight `PetriMorphism` for each projection. `lift` and `pushforward`
+  accept these and genuine `ACSetTransformation`s.
+- **Queries use a graph over the path graph**, not a generated zigzag
+  schema: by Niu et al. Corollary 2.7 the two are equivalent, and Catlab's
+  `Graph` subobjects are well supported. Heyting operations dispatch through
+  `ACSetCategory`.
+- **Not implemented:** the ModelingToolkit extension; `augment` for StockFlow
+  and AlgebraicDynamics models (flows there must be written into the model);
+  vignette 08. `infer` merges runs in Julia; the Lean `infer` is the one-atom-
+  per-cell version, proved pointwise at cell starts.
+- **Lean hypotheses.** `conflictFree_lift_iff` needs a surjective
+  projection for one direction; `lift_comp` is functoriality at the level of
+  folds (the lifted lists are permutations of each other); pairwise-suffices is
+  proved per instance (`Reject`, every total PCM, `Affine` over a total PCM).
+- **Discrete pulses** are applied before the step, as planned; this is stated
+  in the docs and formalised as the definition `discreteStep`.

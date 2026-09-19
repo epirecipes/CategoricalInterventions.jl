@@ -1,60 +1,54 @@
 # CategoricalInterventions.jl
 
-`CategoricalInterventions.jl` is an experimental Julia package for describing,
-combining, and applying time-varying interventions in epidemiological models.
-It represents interventions as typed local edits over half-open time intervals,
-with explicit rules for composing overlapping edits on the same model target.
+CategoricalInterventions.jl describes, combines, and applies time-varying
+interventions in epidemiological models. An intervention is a typed local edit:
+scale a rate on a span of time, move people between compartments at an
+instant, run a vaccination campaign as a flow. Interventions compose when they
+are compatible and are rejected with a precise report when they are not. A
+program of interventions applies to any model that exposes its rates and
+states, so the same lockdown runs unchanged on an AlgebraicPetri net, a
+StockFlow diagram, an AlgebraicDynamics system, or a hand-written ODE.
 
-The package is built around three ideas:
+The algebra behind this is small and is verified: Lean proves the laws of
+composition, the narrative (sheaf and cosheaf) structure of programs, the
+action of programs on schedules, transport along model morphisms, and the
+callback-lowering algorithm. Lean does not verify the ODE solver or Catlab.
+The [verified properties](@ref verified) page lists every claim the
+documentation makes with the theorem behind it.
 
-- **typed targets** identify what an intervention changes, such as a model
-  parameter, state variable, process, or observation;
-- **interval support** records when the edit is active;
-- **combination algebras** make overlap behavior explicit, so conflicting
-  interventions fail early while compatible interventions can compose.
+## Where to go
 
-## What the docs cover
+- [Quick start](@ref quickstart): a lockdown and a vaccination on an SIR model in
+  ten lines.
+- [Concepts](@ref concepts): targets, supports, effects, algebras, conflicts,
+  epochs, in plain language.
+- How-to guides for [AlgebraicPetri](@ref howto-algebraicpetri),
+  [StockFlow](@ref howto-stockflow), [AlgebraicDynamics](@ref howto-algebraicdynamics),
+  [discrete-time models](@ref howto-discrete), [flows](@ref howto-flows),
+  [transport and stratification](@ref howto-transport), [temporal queries](@ref howto-queries),
+  and [inferring interventions](@ref howto-infer).
+- [Semantics](@ref semantics): exactly what a program means and what the callback
+  guarantees.
+- [The categorical view](@ref categorical): for readers who want the mathematics,
+  with every definition linked to its Lean theorem.
+- [Verified properties](@ref verified) and the [API reference](@ref api-reference).
 
-Use the pages in this manual in order if you are new to the package:
+## Module
 
-1. [Tutorial](@ref tutorial) introduces targets, intervals, composition, epoch
-   refinement, and discrete schedules.
-2. [Callback lowering](@ref callback-lowering) explains how intervention programs become
-   `DiffEqCallbacks.jl` callbacks for SciML integrators, including
-   AlgebraicPetri-style state and parameter containers.
-3. [Categorical structures](@ref categorical-structures) documents the Catlab representations used for
-   epoch maps and intervention-program ACSets.
-4. [Unicode syntax](@ref unicode-syntax) lists the ContACT.jl-style shorthand operators.
-5. [API reference](@ref api-reference) includes all exported public symbols.
+```@docs
+CategoricalInterventions
+```
 
-Rendered Quarto vignettes in the repository complement these docs with
-end-to-end examples using AlgebraicPetri.jl, StockFlow.jl, and
-AlgebraicDynamics.jl.
+## Installation
 
-## Installation for local development
-
-From the package directory:
+The package is not yet registered. From a clone:
 
 ```julia
 using Pkg
-Pkg.activate(".")
-Pkg.instantiate()
+Pkg.develop(path="path/to/CategoricalInterventions.jl")
 ```
 
-Load the package with:
-
-```julia
-using CategoricalInterventions
-```
-
-Load `DiffEqCallbacks` as well when using callback lowering:
-
-```julia
-using DiffEqCallbacks
-```
-
-## Public API completeness
-
-The documentation build uses Documenter with `checkdocs = :exports`, so exported
-symbols are checked against the manual. The [API reference](@ref api-reference)
-is the public surface for the package.
+Load the extensions you need by loading their packages: `DiffEqCallbacks`
+(with an integrator such as `OrdinaryDiffEq`) for simulation,
+`AlgebraicPetri`, `StockFlow`, or `AlgebraicDynamics` for model construction,
+and `Plots` for Gantt charts.
