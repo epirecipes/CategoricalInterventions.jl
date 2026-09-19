@@ -1,7 +1,6 @@
 Manifest.toml
 docs/build/
 proofs/.lake/
-proofs/lake-manifest.json
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
