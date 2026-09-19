@@ -33,6 +33,9 @@ stratified = Model(st.net)                 # species S_young, S_old, ...; rates 
 lifted = lift(program, st.to_base)         # one copy of each atom per stratum
 ```
 
+Catlab also exports a function named `lift`; if both packages are loaded
+unqualified, write `lift_along` or `CategoricalInterventions.lift`.
+
 A `Transfer` lifts within each stratum (`S_young → R_young`), read from the
 tuple labels of the stratified net. Compose stratum-specific refinements as
 usual:

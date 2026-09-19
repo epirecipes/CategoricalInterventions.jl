@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Composition and conflicts</title>
+<title>Narratives and queries</title>
 <style>
 
 code{white-space: pre-wrap;}
@@ -2203,13 +2203,13 @@ vertical-align: -.125em;
 
 <div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
 <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="composition-and-conflicts.md"><i class="bi bi-file-code"></i>Github (GFM)</a></li><li><a href="composition-and-conflicts.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></div>
+<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="narratives-and-queries.md"><i class="bi bi-file-code"></i>Github (GFM)</a></li><li><a href="narratives-and-queries.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></div>
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Composition and conflicts</h1>
-<p class="subtitle lead">Effect algebras decide what overlapping interventions mean</p>
+<h1 class="title">Narratives and queries</h1>
+<p class="subtitle lead">A program as a sheaf and a cosheaf, and the temporal logic that follows</p>
 </div>
 
 
@@ -2226,134 +2226,191 @@ vertical-align: -.125em;
 </header>
 
 
-<p>Two interventions on different targets always compose. Two on the same target compose only if their supports are disjoint or the target’s algebra says how to combine them. This vignette shows the algebras and the rules.</p>
+<p>Niu, Osgood, Zelko and Srinivasan describe time-varying data as <em>narratives</em>: sheaves on the poset of closed intervals of a timeline. An intervention program is one. Its <em>persistent</em> narrative sends an interval to the atoms in force throughout it; its <em>cumulative</em> narrative sends an interval to the atoms in force at some time in it. This vignette evaluates both, checks the gluing equations that make them a sheaf and a cosheaf, and uses Catlab’s subobject logic to ask temporal questions about a policy timeline.</p>
 <div id="2" class="cell" data-execution_count="1">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">CategoricalInterventions</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<section id="undeclared-targets-reject-overlaps" class="level2">
-<h2 class="anchored" data-anchor-id="undeclared-targets-reject-overlaps">Undeclared targets reject overlaps</h2>
-<p>A <code>TargetSpace</code> records the algebra of each target. Anything undeclared uses <code>Reject</code>: overlapping effects are a conflict, and the report names the pair, the overlap, and an algebra that would resolve it.</p>
+<section id="a-policy-timeline" class="level2">
+<h2 class="anchored" data-anchor-id="a-policy-timeline">A policy timeline</h2>
 <div id="4" class="cell" data-execution_count="1">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>plain <span class="op">=</span> <span class="fu">TargetSpace</span>()</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>p <span class="op">=</span> <span class="pp">@interventions</span> plain <span class="cf">begin</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    closure <span class="op">=</span> <span class="fu">scale</span>(<span class="op">:</span>beta, <span class="fl">0.6</span>; during<span class="op">=</span><span class="fl">10</span><span class="op">..</span><span class="fl">30</span>)</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    masks   <span class="op">=</span> <span class="fu">scale</span>(<span class="op">:</span>beta, <span class="fl">0.8</span>; during<span class="op">=</span><span class="fl">20</span><span class="op">..</span><span class="fl">40</span>)</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">conflicts</span>(p)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display" data-execution_count="1">
-<pre><code>1-element Vector{Conflict}:
- Conflict(Parameter:beta on [20, 30): closure vs masks; effects scale(0.6) and scale(0.8) do not combine under CategoricalInterventions.Reject(); declare Multiplicative())</code></pre>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>space <span class="op">=</span> <span class="fu">TargetSpace</span>()</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">declare!</span>(space, <span class="op">:</span>contact, <span class="fu">Affine</span>(<span class="fu">Multiplicative</span>()); value_type<span class="op">=</span><span class="dt">Float64</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">declare!</span>(space, <span class="op">:</span>masks, <span class="fu">Affine</span>(<span class="fu">Multiplicative</span>()); value_type<span class="op">=</span><span class="dt">Float64</span>)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">declare!</span>(space, <span class="op">:</span>testing, <span class="fu">Affine</span>(<span class="fu">Additive</span>()); value_type<span class="op">=</span><span class="dt">Float64</span>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>policy <span class="op">=</span> <span class="pp">@interventions</span> space <span class="cf">begin</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    lockdown_1 <span class="op">=</span> <span class="fu">scale</span>(<span class="op">:</span>contact, <span class="fl">0.4</span>; during<span class="op">=</span><span class="fl">10</span><span class="op">..</span><span class="fl">31</span>)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    lockdown_2 <span class="op">=</span> <span class="fu">scale</span>(<span class="op">:</span>contact, <span class="fl">0.6</span>; during<span class="op">=</span><span class="fl">35</span><span class="op">..</span><span class="fl">50</span>)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    masking    <span class="op">=</span> <span class="fu">scale</span>(<span class="op">:</span>masks, <span class="fl">0.7</span>; during<span class="op">=</span><span class="fl">20</span><span class="op">..</span><span class="fl">60</span>)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    surge      <span class="op">=</span> <span class="fu">add</span>(<span class="op">:</span>testing, <span class="fl">500.0</span>; during<span class="op">=</span><span class="fl">25</span><span class="op">..</span><span class="fl">45</span>)</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="fu">explain</span>(policy)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Epochs:
+  [10, 20)  lockdown_1
+      contact: scale(0.4)
+  [20, 25)  lockdown_1, masking
+      contact: scale(0.4)
+      masks: scale(0.7)
+  [25, 31)  lockdown_1, masking, surge
+      contact: scale(0.4)
+      masks: scale(0.7)
+      testing: add(500.0)
+  [31, 35)  masking, surge
+      masks: scale(0.7)
+      testing: add(500.0)
+  [35, 45)  lockdown_2, masking, surge
+      contact: scale(0.6)
+      masks: scale(0.7)
+      testing: add(500.0)
+  [45, 50)  lockdown_2, masking
+      contact: scale(0.6)
+      masks: scale(0.7)
+  [50, 60)  masking
+      masks: scale(0.7)</code></pre>
 </div>
 </div>
+</section>
+<section id="persistent-and-cumulative-narratives" class="level2">
+<h2 class="anchored" data-anchor-id="persistent-and-cumulative-narratives">Persistent and cumulative narratives</h2>
+<p>Evaluate a narrative on a closed interval <code>[lo, hi]</code> or at a point.</p>
 <div id="6" class="cell" data-execution_count="1">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">compose</span>(<span class="fu">Program</span>(p[<span class="fl">1</span>]; space<span class="op">=</span>plain), <span class="fu">Program</span>(p[<span class="fl">2</span>]; space<span class="op">=</span>plain))</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="cf">catch</span> err</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sprint</span>(showerror, err)</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>A <span class="op">=</span> <span class="fu">persistent</span>(policy)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>C <span class="op">=</span> <span class="fu">cumulative</span>(policy)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ids</span>(x) <span class="op">=</span> [a.id for a <span class="kw">in</span> x]</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>(throughout_25_40 <span class="op">=</span> <span class="fu">ids</span>(<span class="fu">A</span>(<span class="fl">25</span>, <span class="fl">40</span>)), sometime_25_40 <span class="op">=</span> <span class="fu">ids</span>(<span class="fu">C</span>(<span class="fl">25</span>, <span class="fl">40</span>)), at_33 <span class="op">=</span> <span class="fu">ids</span>(<span class="fu">A</span>(<span class="fl">33</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display" data-execution_count="1">
-<pre><code>&quot;Intervention program has 1 conflict(s):\n  - Conflict(Parameter:beta on [20, 30): closure vs masks; effects scale(0.6) and scale(0.8) do not combine under CategoricalInterventions.Reject(); declare CategoricalInterventions.Multiplicative())\n&quot;</code></pre>
+<pre><code>(throughout_25_40 = [:masking, :surge], sometime_25_40 = [:lockdown_1, :lockdown_2, :masking, :surge], at_33 = [:masking, :surge])</code></pre>
 </div>
 </div>
-</section>
-<section id="multiplicative-and-set-then-scale" class="level2">
-<h2 class="anchored" data-anchor-id="multiplicative-and-set-then-scale">Multiplicative and set-then-scale</h2>
-<p>Declaring <code>Multiplicative()</code> makes overlapping scalings multiply. Declaring <code>Affine(Multiplicative())</code> (the default for rates in models built from AlgebraicPetri and StockFlow) additionally allows one absolute assignment, which is applied <em>before</em> any scalings, regardless of the order in which the atoms were written.</p>
+<p>Between the two lockdowns nothing acts on <code>contact</code>, so <code>contact</code> is under intervention at day 30 and at day 36 but not throughout <code>[30, 36]</code>.</p>
 <div id="8" class="cell" data-execution_count="1">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>space <span class="op">=</span> <span class="fu">TargetSpace</span>()</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">declare!</span>(space, <span class="op">:</span>beta, <span class="fu">Affine</span>(<span class="fu">Multiplicative</span>()); value_type<span class="op">=</span><span class="dt">Float64</span>)</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">declare!</span>(space, <span class="op">:</span>gamma, <span class="fu">Affine</span>(<span class="fu">Multiplicative</span>()); value_type<span class="op">=</span><span class="dt">Float64</span>)</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>q <span class="op">=</span> <span class="pp">@interventions</span> space <span class="cf">begin</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    closure  <span class="op">=</span> <span class="fu">scale</span>(<span class="op">:</span>beta, <span class="fl">0.6</span>; during<span class="op">=</span><span class="fl">10</span><span class="op">..</span><span class="fl">30</span>)</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    masks    <span class="op">=</span> <span class="fu">scale</span>(<span class="op">:</span>beta, <span class="fl">0.8</span>; during<span class="op">=</span><span class="fl">20</span><span class="op">..</span><span class="fl">40</span>)</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    baseline <span class="op">=</span> <span class="fu">set</span>(<span class="op">:</span>beta, <span class="fl">0.5</span>; during<span class="op">=</span><span class="fl">15</span><span class="op">..</span><span class="fl">35</span>)</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>[(<span class="cn">e</span>.support, <span class="fu">round</span>(<span class="cn">e</span>.values[<span class="op">:</span>beta]; sigdigits<span class="op">=</span><span class="fl">4</span>)) for <span class="cn">e</span> <span class="kw">in</span> <span class="fu">apply</span>(q, <span class="fu">Dict</span>(<span class="op">:</span>beta <span class="op">=&gt;</span> <span class="fl">0.3</span>))]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">throughout</span>(policy, <span class="op">:</span>contact, (<span class="fl">30</span>, <span class="fl">36</span>)), <span class="fu">sometime</span>(policy, <span class="op">:</span>contact, (<span class="fl">30</span>, <span class="fl">36</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display" data-execution_count="1">
-<pre><code>5-element Vector{Tuple{Span{Int64}, Float64}}:
- ([10, 15), 0.18)
- ([15, 20), 0.3)
- ([20, 30), 0.24)
- ([30, 35), 0.4)
- ([35, 40), 0.24)</code></pre>
+<pre><code>(false, true)</code></pre>
 </div>
 </div>
-<p>On <code>[20, 30)</code> the value is <code>0.5 * 0.6 * 0.8 = 0.24</code>: the assignment first, then both scalings. Reordering the atoms gives the same schedule.</p>
+</section>
+<section id="the-gluing-equations" class="level2">
+<h2 class="anchored" data-anchor-id="the-gluing-equations">The gluing equations</h2>
+<p>For <code>a ≤ p ≤ b</code>, the persistent narrative satisfies <code>A[a,b] = A[a,p] ∩ A[p,b]</code> and the cumulative one <code>C[a,b] = C[a,p] ∪ C[p,b]</code> with <code>C[a,p] ∩ C[p,b] = C[p,p]</code>. These are the sheaf and cosheaf conditions of the interval site; here they are checked on a few triples.</p>
 <div id="10" class="cell" data-execution_count="1">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>q_reordered <span class="op">=</span> <span class="fu">Program</span>(<span class="fu">reverse</span>(q.atoms); space<span class="op">=</span>space)</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>[(<span class="cn">e</span>.support, <span class="fu">round</span>(<span class="cn">e</span>.values[<span class="op">:</span>beta]; sigdigits<span class="op">=</span><span class="fl">4</span>)) for <span class="cn">e</span> <span class="kw">in</span> <span class="fu">apply</span>(q_reordered, <span class="fu">Dict</span>(<span class="op">:</span>beta <span class="op">=&gt;</span> <span class="fl">0.3</span>))] <span class="op">==</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    [(<span class="cn">e</span>.support, <span class="fu">round</span>(<span class="cn">e</span>.values[<span class="op">:</span>beta]; sigdigits<span class="op">=</span><span class="fl">4</span>)) for <span class="cn">e</span> <span class="kw">in</span> <span class="fu">apply</span>(q, <span class="fu">Dict</span>(<span class="op">:</span>beta <span class="op">=&gt;</span> <span class="fl">0.3</span>))]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>triples <span class="op">=</span> [(<span class="fl">10</span>, <span class="fl">20</span>, <span class="fl">31</span>), (<span class="fl">25</span>, <span class="fl">33</span>, <span class="fl">40</span>), (<span class="fl">0</span>, <span class="fl">35</span>, <span class="fl">60</span>), (<span class="fl">30</span>, <span class="fl">30</span>, <span class="fl">36</span>)]</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span>(triples) <span class="cf">do</span> (a, p, b)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    persistent_ok <span class="op">=</span> <span class="fu">Set</span>(<span class="fu">A</span>(a, b)) <span class="op">==</span> <span class="fu">intersect</span>(<span class="fu">Set</span>(<span class="fu">A</span>(a, p)), <span class="fu">Set</span>(<span class="fu">A</span>(p, b)))</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    cumulative_ok <span class="op">=</span> <span class="fu">Set</span>(<span class="fu">C</span>(a, b)) <span class="op">==</span> <span class="fu">union</span>(<span class="fu">Set</span>(<span class="fu">C</span>(a, p)), <span class="fu">Set</span>(<span class="fu">C</span>(p, b))) <span class="op">&amp;&amp;</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>                    <span class="fu">intersect</span>(<span class="fu">Set</span>(<span class="fu">C</span>(a, p)), <span class="fu">Set</span>(<span class="fu">C</span>(p, b))) <span class="op">==</span> <span class="fu">Set</span>(<span class="fu">C</span>(p, p))</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    (a, p, b) <span class="op">=&gt;</span> (persistent_ok, cumulative_ok)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display" data-execution_count="1">
-<pre><code>true</code></pre>
+<pre><code>4-element Vector{Pair{Tuple{Int64, Int64, Int64}, Tuple{Bool, Bool}}}:
+ (10, 20, 31) =&gt; (1, 1)
+ (25, 33, 40) =&gt; (1, 1)
+  (0, 35, 60) =&gt; (1, 1)
+ (30, 30, 36) =&gt; (1, 1)</code></pre>
 </div>
 </div>
-<p>Two absolute assignments on the same target still conflict, because there is no canonical value.</p>
+<p>The second cumulative equation depends on supports being convex: an atom that meets <code>[a, p]</code> and <code>[p, b]</code> must contain <code>p</code>.</p>
+</section>
+<section id="a-discrete-window-and-its-truth-values" class="level2">
+<h2 class="anchored" data-anchor-id="a-discrete-window-and-its-truth-values">A discrete window and its truth values</h2>
+<p>On a finite grid, a target-level narrative is a graph over the path graph: a vertex for “under intervention at <code>tₖ</code>” and an edge for “under intervention throughout <code>[tₖ, tₖ₊₁]</code>”. A program is a subobject of the window’s ambient graph. Each unit interval then carries one of the five local truth values of the paper’s subobject classifier.</p>
 <div id="12" class="cell" data-execution_count="1">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">conflicts</span>(<span class="fu">compose</span>(q, <span class="fu">Program</span>(<span class="fu">set</span>(<span class="op">:</span>beta, <span class="fl">0.1</span>; during<span class="op">=</span><span class="fl">25</span><span class="op">..</span><span class="fl">45</span>, id<span class="op">=:</span>second); space<span class="op">=</span>space); check<span class="op">=</span><span class="cn">false</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display" data-execution_count="1">
-<pre><code>1-element Vector{Conflict}:
- Conflict(Parameter:beta on [25, 35): baseline vs second; effects set(0.5) and set(0.1) do not combine under Affine(CategoricalInterventions.Multiplicative()); declare LatestWins())</code></pre>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>window <span class="op">=</span> <span class="fu">NarrativeWindow</span>([<span class="fu">Target</span>(<span class="op">:</span>contact), <span class="fu">Target</span>(<span class="op">:</span>masks), <span class="fu">Target</span>(<span class="op">:</span>testing)], <span class="fl">0</span><span class="op">:</span><span class="fl">5</span><span class="op">:</span><span class="fl">60</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>s <span class="op">=</span> <span class="fu">subobject</span>(window, policy)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">describe</span>(s)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>contact:
+  [0, 5]  not in force
+  [5, 10]  not in force at the start, in force by the end
+  [10, 15]  in force throughout
+  [15, 20]  in force throughout
+  [20, 25]  in force throughout
+  [25, 30]  in force throughout
+  [30, 35]  in force at both ends but lifted in between
+  [35, 40]  in force throughout
+  [40, 45]  in force throughout
+  [45, 50]  in force at the start, lifted before the end
+  [50, 55]  not in force
+  [55, 60]  not in force
+masks:
+  [0, 5]  not in force
+  [5, 10]  not in force
+  [10, 15]  not in force
+  [15, 20]  not in force at the start, in force by the end
+  [20, 25]  in force throughout
+  [25, 30]  in force throughout
+  [30, 35]  in force throughout
+  [35, 40]  in force throughout
+  [40, 45]  in force throughout
+  [45, 50]  in force throughout
+  [50, 55]  in force throughout
+  [55, 60]  in force at the start, lifted before the end
+testing:
+  [0, 5]  not in force
+  [5, 10]  not in force
+  [10, 15]  not in force
+  [15, 20]  not in force
+  [20, 25]  not in force at the start, in force by the end
+  [25, 30]  in force throughout
+  [30, 35]  in force throughout
+  [35, 40]  in force throughout
+  [40, 45]  in force at the start, lifted before the end
+  [45, 50]  not in force
+  [50, 55]  not in force
+  [55, 60]  not in force</code></pre>
 </div>
 </div>
-</section>
-<section id="caps" class="level2">
-<h2 class="anchored" data-anchor-id="caps">Caps</h2>
-<p>A <code>Cap()</code> algebra combines upper bounds by taking the tighter one. Here two policies cap a contact rate; where they overlap the lower cap applies.</p>
+<p>The value “in force at both ends but lifted in between” appears on <code>[30, 35]</code> for <code>contact</code>: the first lockdown ends at 31 and the second starts at 35.</p>
 <div id="14" class="cell" data-execution_count="1">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">declare!</span>(space, <span class="op">:</span>contacts, <span class="fu">Cap</span>(); value_type<span class="op">=</span><span class="dt">Float64</span>)</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>caps <span class="op">=</span> <span class="pp">@interventions</span> space <span class="cf">begin</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    venue_limit <span class="op">=</span> <span class="fu">cap</span>(<span class="op">:</span>contacts, <span class="fl">6.0</span>; during<span class="op">=</span><span class="fl">0</span><span class="op">..</span><span class="fl">20</span>)</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    curfew      <span class="op">=</span> <span class="fu">cap</span>(<span class="op">:</span>contacts, <span class="fl">3.0</span>; during<span class="op">=</span><span class="fl">10</span><span class="op">..</span><span class="fl">30</span>)</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>[(<span class="cn">e</span>.support, <span class="cn">e</span>.values[<span class="op">:</span>contacts]) for <span class="cn">e</span> <span class="kw">in</span> <span class="fu">apply</span>(caps, <span class="fu">Dict</span>(<span class="op">:</span>contacts <span class="op">=&gt;</span> <span class="fl">10.0</span>))]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">truth_value</span>(s, <span class="fu">Target</span>(<span class="op">:</span>contact), <span class="fl">7</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display" data-execution_count="1">
-<pre><code>3-element Vector{Tuple{Span{Int64}, Float64}}:
- ([0, 10), 6.0)
- ([10, 20), 3.0)
- ([20, 30), 3.0)</code></pre>
+<pre><code>:both_ends_not_throughout</code></pre>
 </div>
 </div>
 </section>
-<section id="ordered-policies-are-a-separate-class" class="level2">
-<h2 class="anchored" data-anchor-id="ordered-policies-are-a-separate-class">Ordered policies are a separate class</h2>
-<p><code>LatestWins()</code> and <code>HighestPriority()</code> always resolve an overlap, so they never conflict, but the result depends on the order of the atoms. They are therefore not partial commutative monoids, and the package keeps them in a separate class so that the order-independence theorems are never claimed for them.</p>
+<section id="heyting-operations" class="level2">
+<h2 class="anchored" data-anchor-id="heyting-operations">Heyting operations</h2>
+<p>Subobjects of a window form a Heyting algebra, so programs can be combined logically. Each target is its own row of the window, so to compare two policies as temporal propositions they are first placed on a common row by renaming their targets to <code>:policy</code>. Then <code>masks ⟹ lockdown</code> asks “wherever masking is in force, is a lockdown in force?”</p>
 <div id="16" class="cell" data-execution_count="1">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>ordered <span class="op">=</span> <span class="fu">TargetSpace</span>()</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">declare!</span>(ordered, <span class="op">:</span>beta, <span class="fu">LatestWins</span>())</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>a <span class="op">=</span> <span class="fu">set</span>(<span class="op">:</span>beta, <span class="fl">0.2</span>; during<span class="op">=</span><span class="fl">0</span><span class="op">..</span><span class="fl">10</span>, id<span class="op">=:</span>a)</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> <span class="fu">set</span>(<span class="op">:</span>beta, <span class="fl">0.1</span>; during<span class="op">=</span><span class="fl">5</span><span class="op">..</span><span class="fl">15</span>, id<span class="op">=:</span>b)</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>ab <span class="op">=</span> [(<span class="cn">e</span>.support, <span class="cn">e</span>.values[<span class="op">:</span>beta]) for <span class="cn">e</span> <span class="kw">in</span> <span class="fu">apply</span>(<span class="fu">Program</span>([a, b]; space<span class="op">=</span>ordered), <span class="fu">Dict</span>(<span class="op">:</span>beta <span class="op">=&gt;</span> <span class="fl">1.0</span>))]</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>ba <span class="op">=</span> [(<span class="cn">e</span>.support, <span class="cn">e</span>.values[<span class="op">:</span>beta]) for <span class="cn">e</span> <span class="kw">in</span> <span class="fu">apply</span>(<span class="fu">Program</span>([b, a]; space<span class="op">=</span>ordered), <span class="fu">Dict</span>(<span class="op">:</span>beta <span class="op">=&gt;</span> <span class="fl">1.0</span>))]</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>ab, ba</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>masks_p    <span class="op">=</span> <span class="fu">pushforward</span>(<span class="fu">Program</span>(policy.atoms[<span class="fl">3</span><span class="op">:</span><span class="fl">3</span>]; space<span class="op">=</span>space), <span class="fu">Dict</span>(<span class="op">:</span>masks <span class="op">=&gt;</span> <span class="op">:</span>policy))</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>lockdown_p <span class="op">=</span> <span class="fu">pushforward</span>(<span class="fu">Program</span>(policy.atoms[<span class="fl">1</span><span class="op">:</span><span class="fl">2</span>]; space<span class="op">=</span>space), <span class="fu">Dict</span>(<span class="op">:</span>contact <span class="op">=&gt;</span> <span class="op">:</span>policy))</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>testing_p  <span class="op">=</span> <span class="fu">pushforward</span>(<span class="fu">Program</span>(policy.atoms[<span class="fl">4</span><span class="op">:</span><span class="fl">4</span>]; space<span class="op">=</span>space), <span class="fu">Dict</span>(<span class="op">:</span>testing <span class="op">=&gt;</span> <span class="op">:</span>policy))</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>row <span class="op">=</span> <span class="fu">NarrativeWindow</span>([<span class="fu">Target</span>(<span class="op">:</span>policy)], <span class="fl">0</span><span class="op">:</span><span class="fl">5</span><span class="op">:</span><span class="fl">60</span>)</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>M, L, T <span class="op">=</span> <span class="fu">subobject</span>(row, masks_p), <span class="fu">subobject</span>(row, lockdown_p), <span class="fu">subobject</span>(row, testing_p)</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>implication <span class="op">=</span> M <span class="op">⟹</span> L</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>[(row.times[k], row.times[k <span class="op">+</span> <span class="fl">1</span>]) <span class="op">=&gt;</span> <span class="fu">truth_value</span>(implication, <span class="fu">Target</span>(<span class="op">:</span>policy), k) for k <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">12</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display" data-execution_count="1">
-<pre><code>(Tuple{Span{Int64}, Float64}[([0, 5), 0.2), ([5, 10), 0.1), ([10, 15), 0.1)], Tuple{Span{Int64}, Float64}[([0, 5), 0.2), ([5, 10), 0.2), ([10, 15), 0.1)])</code></pre>
+<pre><code>12-element Vector{Pair{Tuple{Int64, Int64}}}:
+   (0, 5) =&gt; :throughout
+  (5, 10) =&gt; :throughout
+ (10, 15) =&gt; :throughout
+ (15, 20) =&gt; :throughout
+ (20, 25) =&gt; :throughout
+ (25, 30) =&gt; :throughout
+ (30, 35) =&gt; :both_ends_not_throughout
+ (35, 40) =&gt; :throughout
+ (40, 45) =&gt; :throughout
+ (45, 50) =&gt; :start_only
+ (50, 55) =&gt; false
+ (55, 60) =&gt; :end_only</code></pre>
 </div>
 </div>
-</section>
-<section id="composition-is-associative-and-refines-epochs" class="level2">
-<h2 class="anchored" data-anchor-id="composition-is-associative-and-refines-epochs">Composition is associative and refines epochs</h2>
-<p>Composing programs concatenates their atoms and merges their declaration tables. The empty program is the identity, and the bracketing does not matter.</p>
+<p>The implication is true where there is no masking, true where both hold, “in force at both ends but lifted in between” on <code>[30, 35]</code> where masking continues across the gap between the two lockdowns, and false from day 50 when masks are worn without a lockdown. The edges of that failure show the half-open convention: on <code>[45, 50]</code> the second lockdown is in force at 45 but not at 50 (“in force at the start, lifted before the end”), and on <code>[55, 60]</code> the implication is vacuously true again at 60, when masking itself ends. Meet and negation read the same way: masking together with surge testing holds throughout <code>[25, 30]</code>; the negation of masking holds before masking begins and fails during it.</p>
 <div id="18" class="cell" data-execution_count="1">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>r <span class="op">=</span> <span class="fu">Program</span>(<span class="fu">scale</span>(<span class="op">:</span>gamma, <span class="fl">2.0</span>; during<span class="op">=</span><span class="fl">0</span><span class="op">..</span><span class="fl">50</span>, id<span class="op">=:</span>testing); space<span class="op">=</span>space)</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">compose</span>(<span class="fu">compose</span>(q, caps), r) <span class="op">==</span> <span class="fu">compose</span>(q, <span class="fu">compose</span>(caps, r))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>(masks_and_testing <span class="op">=</span> <span class="fu">truth_value</span>(M <span class="op">∧</span> T, <span class="fu">Target</span>(<span class="op">:</span>policy), <span class="fl">6</span>),</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a> no_masks_early    <span class="op">=</span> <span class="fu">truth_value</span>(¬M, <span class="fu">Target</span>(<span class="op">:</span>policy), <span class="fl">2</span>),</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a> no_masks_late     <span class="op">=</span> <span class="fu">truth_value</span>(¬M, <span class="fu">Target</span>(<span class="op">:</span>policy), <span class="fl">6</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display" data-execution_count="1">
-<pre><code>true</code></pre>
+<pre><code>(masks_and_testing = :throughout, no_masks_early = :throughout, no_masks_late = false)</code></pre>
 </div>
 </div>
-<p>Adding atoms only ever refines the epoch partition: every epoch of the composite lies inside an epoch of the original or misses all of them.</p>
-<div id="20" class="cell" data-execution_count="1">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>before <span class="op">=</span> [<span class="cn">e</span>.support for <span class="cn">e</span> <span class="kw">in</span> <span class="fu">epochs</span>(q)]</span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>after  <span class="op">=</span> [<span class="cn">e</span>.support for <span class="cn">e</span> <span class="kw">in</span> <span class="fu">epochs</span>(<span class="fu">compose</span>(q, r))]</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>before, after</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display" data-execution_count="1">
-<pre><code>(Span{Int64}[[10, 15), [15, 20), [20, 30), [30, 35), [35, 40)], Span{Int64}[[0, 10), [10, 15), [15, 20), [20, 30), [30, 35), [35, 40), [40, 50)])</code></pre>
-</div>
-</div>
+<p>Scope: these queries operate on the <em>specification</em> of a program, restricted to a finite window of a grid. They say nothing about simulation output.</p>
 </section>
 <section id="what-the-category-theory-bought" class="level2">
 <h2 class="anchored" data-anchor-id="what-the-category-theory-bought">What the category theory bought</h2>
-<p>Each algebra is a partial commutative monoid, so the order in which overlapping atoms are folded never matters (<code>fold_perm</code>, <code>apply_comm</code>), and a program is conflict-free exactly when every pair of co-active atoms combines (<code>conflictFree_of_pairwise</code>), which is why the cheap pairwise check in <code>conflicts</code> is sound. The set-then-scale behaviour is the <code>Affine</code> construction, whose action law is proved as <code>affine_action</code>: absolute first, then the product of the relative effects. Composition of programs is list append (<code>compose_assoc</code>, <code>compose_nil_left</code>, <code>compose_nil_right</code>), and adding atoms refines epochs (<code>epochs_refine</code>). Ordered policies are deliberately outside these theorems.</p>
+<p>The persistent and cumulative narratives satisfy the sheaf and cosheaf gluing equations (<code>persistent_glue</code>, <code>cumulative_union</code>, <code>cumulative_inter_eq_point</code>), and on a point both reduce to the active set (<code>persistent_eq_active_of_point</code>). Because the persistent narrative is a presheaf on the zigzag category, the window graph built from it is a valid discrete narrative in the sense of Niu et al., which is what licenses handing it to Catlab’s subobject classifier. The topos structure is Catlab’s; the package supplies the encoding and the proof that it is sound.</p>
 </section>
 
 </main>

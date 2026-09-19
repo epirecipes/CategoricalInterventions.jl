@@ -29,5 +29,10 @@ s ⟹ q      # wherever s is in force, is q?
 s ∧ q; s ∨ q; ¬s
 ```
 
+Subobjects are compared target by target, so `s ⟹ q` relates the two
+programs on each shared target. To ask whether one policy implies another
+when they touch different targets, first `pushforward` both onto a common
+target name.
+
 Queries act on the program as specified, on a finite window, not on
 simulation output.

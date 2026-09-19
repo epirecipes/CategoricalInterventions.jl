@@ -35,7 +35,7 @@ export event_times, callback_times, active_parameter_effects, state_pulses_at
 export apply_parameter_effects!, apply_state_pulses!, apply_to_integrator!, lower, hold_last
 export to_callback, simulate
 # transport
-export pushforward, lift, fibres
+export pushforward, lift, lift_along, fibres
 # dsl
 export scale, set, add, cap, floor_at, custom, transfer, flow, @interventions
 # show

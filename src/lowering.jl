@@ -29,6 +29,13 @@ function event_times(p::Program)
 end
 const callback_times = event_times
 
+function _check_container(x, sel, what)
+    sel isa Symbol && x isa Vector &&
+        error("$what is a plain Vector but the model locates :$sel by label; pass a labelled container " *
+              "(LVector or ComponentArray) or build the model with positional selectors such as Dict(:$sel => 1)")
+    return nothing
+end
+
 function _parameter_selector(ix::Indexing, t::Target)
     is_parameter_like(t) || error("Target $t is not parameter-like")
     haskey(ix.parameters, t.name) || error("No parameter selector for target :$(t.name)")
@@ -77,6 +84,7 @@ function apply_parameter_effects!(pvec::AbstractVector, prog::Program, m, baseli
     length(pvec) == length(baseline_p) || error("Parameter vector and baseline_p lengths differ")
     for target in parameter_targets(prog)
         sel = _parameter_selector(ix, target)
+        _check_container(pvec, sel, "integrator.p")
         pvec[sel] = baseline_p[sel]
     end
     for (target, eff) in active_parameter_effects(prog, t; check)
@@ -99,6 +107,7 @@ function apply_state_pulses!(u::AbstractVector, prog::Program, m, t; check::Bool
     before = copy(u)
     for (target, eff) in pulses
         sel = _state_selector(ix, target)
+        _check_container(u, sel, "integrator.u")
         u[sel] = _apply_checked(prog, target, eff, u[sel])
     end
     m isa Model && check_invariants(m, before, u)

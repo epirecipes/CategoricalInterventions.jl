@@ -138,6 +138,7 @@ simulate
 ```@docs
 pushforward
 lift
+lift_along
 fibres
 ```
 

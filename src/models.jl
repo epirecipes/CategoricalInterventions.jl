@@ -63,9 +63,19 @@ to positions or other selectors. `PetriIndexing` is the v0.1 name.
 struct Indexing
     parameters::Dict{Symbol,Any}
     states::Dict{Symbol,Any}
+    parameter_names::Vector{Symbol}
+    state_names::Vector{Symbol}
+end
+_names(names::AbstractVector) = Symbol[Symbol(n) for n in names]
+function _names(names::AbstractDict)
+    ks = collect(keys(names))
+    vs = collect(values(names))
+    all(v -> v isa Integer, vs) ? Symbol[Symbol(k) for k in ks[sortperm(vs)]] : sort!(Symbol[Symbol(k) for k in ks])
 end
 Indexing(parameters::Union{AbstractVector,AbstractDict}, states::Union{AbstractVector,AbstractDict}=Symbol[]) =
-    Indexing(_selector_dict(parameters), _selector_dict(states))
+    Indexing(_selector_dict(parameters), _selector_dict(states), _names(parameters), _names(states))
+Indexing(parameters::Dict{Symbol,Any}, states::Dict{Symbol,Any}) =
+    Indexing(parameters, states, _names(parameters), _names(states))
 Indexing(; parameters=Symbol[], states=Symbol[]) = Indexing(parameters, states)
 const PetriIndexing = Indexing
 
@@ -115,14 +125,14 @@ Base.show(io::IO, m::Model) = print(io, "Model(", length(m.indexing.parameters),
 
 Names of the model's parameter-like targets.
 """
-parameters(m::Model) = collect(keys(m.indexing.parameters))
+parameters(m::Model) = copy(m.indexing.parameter_names)
 
 """
     states(model)
 
 Names of the model's state targets.
 """
-states(m::Model) = collect(keys(m.indexing.states))
+states(m::Model) = copy(m.indexing.state_names)
 targets(m::Model) = targets(m.space)
 
 """

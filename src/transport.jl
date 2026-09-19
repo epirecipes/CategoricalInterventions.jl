@@ -112,6 +112,14 @@ function lift(p::Program, π::Dict{Target,Target}; strata::Dict{Target,<:Any}=Di
 end
 
 """
+    lift_along(program, π; kwargs...)
+
+The same as [`lift`](@ref). Use it when `Catlab` is also loaded, since Catlab
+exports a different `lift`.
+"""
+lift_along(p::Program, π; kw...) = lift(p, π; kw...)
+
+"""
     lift(program, π::Dict{Symbol,Symbol}; kinds...)
 
 Convenience: a projection given on names; kinds are taken from the program's

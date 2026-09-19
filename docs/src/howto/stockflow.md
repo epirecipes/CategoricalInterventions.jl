@@ -21,7 +21,8 @@ end
 model = Model(sir)
 ```
 
-Parameters become rate targets and stocks become state targets. Use
-`LVector`s for `u0` and `p0`; the rest is as for AlgebraicPetri. `augment` is
+Parameters become rate targets and stocks become state targets. Targets are
+located by label, so `u0` and `p0` must be `LVector`s (a plain `Vector` gives
+a clear error); the rest is as for AlgebraicPetri. `augment` is
 not available for StockFlow models in this version, so flows must be written
 into the diagram directly.
