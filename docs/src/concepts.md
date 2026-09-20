@@ -22,7 +22,11 @@ state pulses live on instants; state flows live on spans.
 states in one atom) and [`Flow`](@ref) (a continuous transfer at a rate).
 
 **Algebra.** What two effects on the same target at the same time mean
-together. The defaults are the useful ones: rates use `Affine(Multiplicative())`,
+together. Effects always act on the target's baseline value, never on the
+value in force just before: at each time the active effects are combined into
+one effect and that is applied to the baseline. Two overlapping scalings by
+0.5 and 0.8 give 0.4 of the baseline, which equals 0.8 of the halved value,
+and nothing has to be undone when either ends. The defaults are the useful ones: rates use `Affine(Multiplicative())`,
 "set at most once, then scale as often as you like"; states use `Additive()`.
 Any target without a declaration uses `Reject()`, where overlaps are conflicts.
 `Cap()` and `Floor()` take the tighter bound. All of these are partial
