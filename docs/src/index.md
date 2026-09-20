@@ -32,7 +32,7 @@ documentation makes with the theorem behind it.
   guarantees.
 - [The categorical view](@ref categorical): for readers who want the mathematics,
   with every definition linked to its Lean theorem.
-- [Verified properties](@ref verified) and the [API reference](@ref api-reference).
+- [Verified properties](@ref verified), the [vignettes](@ref vignettes), and the [API reference](@ref api-reference).
 
 ## Module
 

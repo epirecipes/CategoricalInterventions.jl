@@ -1,5 +1,7 @@
 # CategoricalInterventions.jl
 
+[Documentation and vignettes](https://epirecipes.github.io/CategoricalInterventions.jl/)
+
 Composable, time-varying interventions for epidemiological models, with the
 algebra behind them verified in Lean.
 
