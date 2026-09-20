@@ -22,6 +22,7 @@ export Target, TargetSpec, TargetSpace, declare!, algebra, value_type
 export Atom, InterventionAtom, Program, InterventionProgram, expand, active
 export Conflict, InterventionConflictError, conflicts, validate
 export compose, compose_interventions, ⊕, restrict, Epoch, epochs, epochize, active_effects, boundaries
+export shift, extent, seq, ⋙
 # narratives
 export persistent, cumulative
 # semantics

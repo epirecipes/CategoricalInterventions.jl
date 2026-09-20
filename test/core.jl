@@ -113,6 +113,34 @@ end
     @test table(p)[1].target == :beta
 end
 
+@testset "Shift and sequential composition" begin
+    sp = sir_space()
+    p = @interventions sp begin
+        a = scale(:beta, 0.5; during=0..10)
+        v = transfer(:S => :R, 5; at=4)
+    end
+    q = Program(sp, scale(:gamma, 2.0; during=2..5, id=:b))
+    s = shift(p, 3)
+    @test [a.support for a in s.atoms] == [Span(3, 13), Instant(7)]
+    @test shift(shift(p, 3), -3) == p && shift(p, 0) == p
+    @test extent(p) == (0, 10) && extent(Program(; space=sp)) === nothing
+    @test shift(compose(p, q), 2) == compose(shift(p, 2), shift(q, 2))          # shift_append
+    # apply_shift: the shifted program acts as the original on the shifted schedule
+    times = collect(0:20)
+    base = Dict(:beta => fill(1.0, 21), :gamma => fill(1.0, 21))
+    orig = apply(p, base, times)[:beta]
+    sh = apply(shift(p, 3), base, times)[:beta]
+    @test sh[4:14] == orig[1:11] && all(==(1.0), sh[1:3]) && all(==(1.0), sh[15:end])
+    # seq starts q when p ends
+    r = seq(p, q)
+    @test r[3].support == Span(10, 13) && length(r) == 3 && (p ⋙ q) == r
+    @test seq(p, q; gap=2)[3].support == Span(12, 15)
+    @test seq(Program(; space=sp), q) == q && seq(p, Program(; space=sp)) == p
+    # shifting preserves conflict-freeness in both directions
+    bad = Program(sp, set(:beta, 0.1; during=0..10, id=:x), set(:beta, 0.2; during=5..15, id=:y))
+    @test !validate(bad) && !validate(shift(bad, 100)) && validate(shift(p, 100))
+end
+
 @testset "Value types" begin
     sp = TargetSpace(); declare!(sp, :beta, Reject(); value_type=Float64)
     p = Program(set(:beta, "fast"; during=1..2); space=sp)

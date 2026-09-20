@@ -211,6 +211,7 @@ end
 Program(atoms::AbstractVector{<:Atom}; space::TargetSpace=TargetSpace()) = Program(collect(atoms), space)
 Program(atoms::Atom...; space::TargetSpace=TargetSpace()) = Program(collect(atoms), space)
 Program(; space::TargetSpace=TargetSpace()) = Program(Atom[], space)
+Program(space::TargetSpace, atoms::Atom...) = Program(collect(atoms), space)
 
 const InterventionProgram = Program
 
@@ -409,6 +410,51 @@ function restrict(p::Program, lo, hi)
     end
     return Program(atoms, p.space)
 end
+
+# ------------------------------------------------------- time operations ---
+
+"""
+    shift(program, δ) -> Program
+
+Translate every support later by `δ` (earlier for negative `δ`). Shifting
+commutes with composition and with the action on schedules, and preserves
+conflict-freeness (Lean: `shift_append`, `apply_shift`, `conflictFree_shift`).
+"""
+shift(p::Program, δ) = Program(Atom[Atom(a.id, a.target, shift(a.support, δ), a.effect, a.metadata) for a in p.atoms], p.space)
+
+"""
+    extent(program) -> (start, stop)
+
+The earliest start and latest end of any support; `nothing` for the empty
+program. An instant contributes its time to both.
+"""
+function extent(p::Program)
+    isempty(p.atoms) && return nothing
+    los = [first(endpoints(a.support)) for a in p.atoms]
+    his = [last(endpoints(a.support)) for a in p.atoms]
+    return (minimum(los), maximum(his))
+end
+
+"""
+    seq(p, q; gap=0) -> Program
+    p ⋙ q
+
+Sequential composition: `q` shifted so that it begins when `p` ends (plus
+`gap`), composed with `p`. Equal to `p ⊕ shift(q, extent(p)[2] + gap - extent(q)[1])`,
+so it inherits the laws of `⊕` and `shift`. With an empty `p` or `q` the other
+program is returned unchanged.
+"""
+function seq(p::Program, q::Program; gap=0, check::Bool=true)
+    (isempty(p.atoms) || isempty(q.atoms)) && return compose(p, q; check)
+    δ = extent(p)[2] + gap - extent(q)[1]
+    return compose(p, shift(q, δ); check)
+end
+"""
+    p ⋙ q
+
+Sequential composition; the same as [`seq`](@ref)`(p, q)`. Type `\\ggg<TAB>`.
+"""
+const ⋙ = seq
 
 # ----------------------------------------------------------------- epochs ---
 

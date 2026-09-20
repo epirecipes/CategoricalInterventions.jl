@@ -72,6 +72,10 @@ conflicts
 validate
 compose
 restrict
+shift
+extent
+seq
+⋙
 Epoch
 epochs
 active_effects

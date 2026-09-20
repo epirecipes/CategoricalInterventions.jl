@@ -33,7 +33,9 @@ so that order-dependence is visible in the type.
 
 **Program.** A list of atoms with the declaration table of their targets.
 Programs compose with [`compose`](@ref) or `⊕`. Composition is associative with
-the empty program as identity. Different targets never conflict; the same
+the empty program as identity. Two further operations act on time: [`shift`](@ref)
+translates a program by a delay, and [`seq`](@ref) (or `⋙`) starts one program
+when another ends; both are defined from `⊕` and shifting and inherit its laws. Different targets never conflict; the same
 target on disjoint supports never conflicts; the same target on overlapping
 supports conflicts unless the algebra combines the effects. A conflict report
 names the target, the overlap, both atoms, and an algebra that would resolve

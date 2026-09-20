@@ -115,6 +115,14 @@ covers_closed(s::Span, lo, hi) = s.lo <= lo && hi < s.hi
 covers_closed(s::Instant, lo, hi) = lo == hi == s.t
 
 """
+    shift(support, δ)
+
+Translate a support later in time by `δ`.
+"""
+shift(s::Span, δ) = Span(s.lo + δ, s.hi + δ)
+shift(s::Instant, δ) = Instant(s.t + δ)
+
+"""
     endpoints(support)
 
 The event times of a support: `(lo, hi)` for a span, `(t,)` for an instant.
