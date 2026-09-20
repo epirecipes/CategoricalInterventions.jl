@@ -21,7 +21,7 @@ makedocs(;
     remotes=nothing,
     format=Documenter.HTML(;
         prettyurls=true,
-        canonical="https://epirecipes.github.io/CategoricalInterventions.jl/",
+        canonical="https://epirecip.es/CategoricalInterventions.jl/",
         edit_link=nothing,
         repolink=nothing,
     ),
