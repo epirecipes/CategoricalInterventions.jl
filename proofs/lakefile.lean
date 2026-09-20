@@ -12,4 +12,6 @@ require mathlib from git
 
 @[default_target]
 lean_lib «CategoricalInterventionsProofs» where
-  globs := #[.submodules `CategoricalInterventionsProofs]
+  globs := #[.submodules `CategoricalInterventionsProofs,
+    -- the SA-Pass audit (shadows, checkers, `sa_check_*` commands); see design/SA-PASS.md
+    .andSubmodules `CategoricalInterventionsProofs.SAPass]
