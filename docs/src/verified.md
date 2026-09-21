@@ -33,7 +33,7 @@ lowering algorithm; it does not verify the ODE solver or Catlab.
 | Flows on function-valued models are parameter intervals on a wrapped model | `augment_flow` | `augment_restrict` | `test/models.jl` |
 | Shifting a program by a delay commutes with composition and preserves conflict-freeness in both directions | `shift` | `shift_append`, `shift_add`, `conflictFree_shift` | `test/core.jl` |
 | A shifted program acts as the original acts on the correspondingly shifted schedule | `shift` | `apply_shift`, `foldAt_shift` | `test/core.jl` |
-| Sequential composition is composition with a shifted program and inherits its laws | `seq` | `seq_assoc`, `seq_nil_left`, `seq_nil_right`, `apply_seq`, `seq_disjoint_conflictFree` | `test/core.jl` |
+| Sequential composition is composition with a shifted program: associative with the empty program as unit, and conflict-free when the shifted programs share no co-active target | `seq` | `seq_assoc`, `seq_nil_left`, `seq_nil_right`, `apply_seq`, `seq_disjoint_conflictFree` | `test/core.jl` |
 | Pushforward is functorial and preserves conflict-freeness when injective on the targets used | `pushforward` | `pushforward_comp`, `pushforward_id`, `conflictFree_pushforward_of_injOn'` | `test/core.jl` |
 | Lifting to a stratified model is functorial, preserves conflict-freeness, and acts stratum-wise | `lift` | `lift_comp_perm`, `lift_id`, `conflictFree_lift`, `apply_lift` | `test/core.jl` |
 | A flow is a parameter intervention on the augmented model, unchanged on the original targets | `augment` | `augment_restrict`, `augment_conflictFree_iff` | `test/models.jl` |

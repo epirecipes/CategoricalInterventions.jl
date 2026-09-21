@@ -72,7 +72,11 @@ augmentation, and inference. The documentation's
 makes with the theorem behind it, and the docs build fails if a theorem
 disappears. Lean verifies the algebra of programs, their action on schedules,
 and the lowering algorithm; it does not verify the ODE solver or Catlab.
-`test/laws.jl` exercises the same laws on random programs.
+`test/laws.jl` exercises the same laws on random programs. An independent
+re-verification of the laws in the Rocq prover, made from the manuscript and
+the verified-properties page alone without access to the Lean sources, lives
+in the sibling directory `interventions-rocq/` of the project checkout; its
+findings corrected several over-broad sentences in the paper and this ledger.
 
 ## Layout
 
