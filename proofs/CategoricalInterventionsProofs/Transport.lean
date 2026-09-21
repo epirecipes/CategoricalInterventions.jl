@@ -23,10 +23,17 @@ def pushforward (f : T → T') (P : Program τ T M) : Program τ T' M :=
 /-- The set of targets used by a program. -/
 def targets (P : Program τ T M) : Set T := {j | ∃ a ∈ P, a.target = j}
 
-/-- **Functoriality of pushforward.** -/
+/-- **Functoriality of pushforward** (composition law). -/
 theorem pushforward_comp (f : T → T') (g : T' → T'') (P : Program τ T M) :
     pushforward g (pushforward f P) = pushforward (g ∘ f) P := by
   simp [pushforward, List.map_map, Function.comp_def]
+
+/-- **Functoriality of pushforward** (identity law): renaming along `id` is the
+identity on programs.  (SA-Pass gap G6.) -/
+theorem pushforward_id (P : Program τ T M) : pushforward id P = P := by
+  induction P with
+  | nil => rfl
+  | cons a P ih => exact congrArg (a :: ·) ih
 
 @[simp] theorem pushforward_nil (f : T → T') : pushforward f ([] : Program τ T M) = [] := rfl
 
@@ -87,6 +94,13 @@ theorem conflictFree_pushforward_of_injOn {f : T → T'} {P : Program τ T M}
         obtain ⟨a, ha, rfl⟩ := mem_pushforward.mp hb
         exact hj a ha e
 
+/-- **Pushforward preserves conflict-freeness** when `f` is injective on the
+targets that `P` uses (the one-directional reading; the `↔` is
+`conflictFree_pushforward_of_injOn`).  (SA-Pass gap G7.) -/
+theorem conflictFree_pushforward_of_injOn' {f : T → T'} {P : Program τ T M}
+    (hf : Set.InjOn f (targets P)) (h : ConflictFree P) : ConflictFree (pushforward f P) :=
+  (conflictFree_pushforward_of_injOn hf).mpr h
+
 end Fold
 
 /-! ## Lift along a projection -/
@@ -116,6 +130,63 @@ noncomputable def lift (π : T' → T) (P : Program τ T M) : Program τ T' M :=
 theorem lift_cons (π : T' → T) (a : Atom τ T M) (P : Program τ T M) :
     lift π (a :: P) = copies a (fibre π a.target) ++ lift π P := by
   simp [lift, List.flatMap_cons]
+
+/-- The fibre of a composite projection is, up to order, the union of the
+fibres. -/
+theorem fibre_comp_perm {T'' : Type*} [DecidableEq T'] [Fintype T'']
+    (π : T' → T) (π' : T'' → T') (j : T) :
+    ((fibre π j).flatMap (fibre π')).Perm (fibre (π ∘ π') j) := by
+  have hnd : ((fibre π j).flatMap (fibre π')).Nodup := by
+    rw [List.nodup_flatMap]
+    refine ⟨fun j' _ => fibre_nodup π' j', ?_⟩
+    refine (fibre_nodup π j).pairwise_of_forall_ne ?_
+    intro a _ b _ hab
+    show List.Disjoint (fibre π' a) (fibre π' b)
+    rw [List.disjoint_left]
+    intro j'' ha hb
+    rw [mem_fibre] at ha hb
+    exact hab (ha.symm.trans hb)
+  rw [List.perm_ext_iff_of_nodup hnd (fibre_nodup _ _)]
+  intro j''
+  simp only [List.mem_flatMap, mem_fibre, Function.comp]
+  constructor
+  · rintro ⟨j', h1, h2⟩
+    rw [h2, h1]
+  · intro h
+    exact ⟨π' j'', h, rfl⟩
+
+/-- **Functoriality of lift** (composition law, at the level of programs):
+lifting along `π` then `π'` is lifting along `π ∘ π'`, up to a permutation of
+the atoms (fibres are enumerated in `Finset.toList` order, so strict list
+equality fails).  (SA-Pass gap G8.) -/
+theorem lift_comp_perm {T'' : Type*} [DecidableEq T'] [Fintype T'']
+    (π : T' → T) (π' : T'' → T') (P : Program τ T M) :
+    (lift π' (lift π P)).Perm (lift (π ∘ π') P) := by
+  induction P with
+  | nil => simp [lift]
+  | cons a P ih =>
+    rw [lift_cons, lift_cons]
+    unfold lift at ih ⊢
+    rw [List.flatMap_append]
+    refine List.Perm.append ?_ ih
+    simp only [copies, List.flatMap_map]
+    rw [← List.map_flatMap]
+    exact (fibre_comp_perm π π' a.target).map _
+
+omit [Fintype T'] in
+/-- The fibre of the identity over `j` is `[j]`. -/
+theorem fibre_id [Fintype T] (j : T) : fibre id j = [j] := by
+  simp [fibre, Finset.filter_eq', Finset.toList_singleton]
+
+omit [Fintype T'] in
+/-- **Functoriality of lift** (identity law): lifting along `id` is the identity
+on programs, as lists.  (SA-Pass gap G9.) -/
+theorem lift_id [Fintype T] (P : Program τ T M) : lift id P = P := by
+  induction P with
+  | nil => rfl
+  | cons a P ih =>
+    rw [lift_cons, fibre_id, ih]
+    rfl
 
 end LiftDef
 
@@ -160,12 +231,11 @@ theorem foldAt_lift (π : T' → T) (P : Program τ T M) (j' : T') (t : τ) :
     · simp [hm, bind_mul_one]
 
 /-- **Functoriality of lift** (at the level of folds): lifting along `π` then `π'`
-is lifting along `π ∘ π'`. -/
+is lifting along `π ∘ π'`.  Corollary of `lift_comp_perm` via `foldAt_perm`. -/
 theorem lift_comp {T'' : Type*} [DecidableEq T''] [Fintype T'']
     (π : T' → T) (π' : T'' → T') (P : Program τ T M) (j'' : T'') (t : τ) :
-    foldAt j'' (lift π' (lift π P)) t = foldAt j'' (lift (π ∘ π') P) t := by
-  rw [foldAt_lift, foldAt_lift, foldAt_lift]
-  rfl
+    foldAt j'' (lift π' (lift π P)) t = foldAt j'' (lift (π ∘ π') P) t :=
+  foldAt_perm (lift_comp_perm π π' P) j'' t
 
 /-- **Lift preserves conflict-freeness**, and reflects it when every target *used*
 by `P` has a preimage under `π` (the condition the Julia `lift` checks). -/
@@ -189,6 +259,9 @@ theorem conflictFree_lift_iff {π : T' → T} (hπ : Function.Surjective π) (P 
     ConflictFree (lift π P) ↔ ConflictFree P :=
   conflictFree_lift_iff' P (fun j _ => hπ j)
 
+/-- **Lift preserves conflict-freeness**, unconditionally (no hypothesis on `π`):
+this is exactly the one-directional sentence; see `conflictFree_lift_iff'` for
+reflection.  (SA-Pass gap G10.) -/
 theorem conflictFree_lift {π : T' → T} {P : Program τ T M} (h : ConflictFree P) :
     ConflictFree (lift π P) := by
   intro t j'

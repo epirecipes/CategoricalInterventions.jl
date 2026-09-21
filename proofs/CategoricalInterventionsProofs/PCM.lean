@@ -565,6 +565,15 @@ theorem act_eq_of_mul {W : Type*} [HasAct M W] {x y z : Affine W M} (v : W)
     obtain ⟨m, hm, rfl, rfl⟩ := h
     rfl
 
+/-- **Two absolute assignments conflict**, over *any* relative algebra `M` (no
+totality needed): the product of two affine effects that both carry an absolute
+is undefined, whatever the relative parts.  (SA-Pass gap G4.) -/
+theorem mul_eq_none_of_abs {a b : Affine V M} (ha : a.abs.isSome) (hb : b.abs.isSome) :
+    PCM.mul a b = none := by
+  obtain ⟨xa, ma⟩ := a
+  obtain ⟨xb, mb⟩ := b
+  cases xa <;> cases xb <;> simp_all [mul_mk]
+
 theorem mul_isSome_iff [PCMTotal M] (a b : Affine V M) :
     (PCM.mul a b).isSome ↔ ¬ (a.abs.isSome ∧ b.abs.isSome) := by
   obtain ⟨xa, ma⟩ := a
@@ -594,6 +603,19 @@ theorem fold_abs_none_iff {l : List (Affine V M)} {c : Affine V M}
       all_goals
         obtain ⟨_, _, rfl, _⟩ := h
         simp_all
+
+/-- An absolute survives the fold: if the fold of `l` is defined and some element
+of `l` carries an absolute, so does the fold. -/
+theorem fold_abs_isSome_of_mem {l : List (Affine V M)} {c : Affine V M}
+    (h : foldList l = some c) {a : Affine V M} (ha : a ∈ l) (habs : a.abs.isSome) :
+    c.abs.isSome := by
+  by_contra hc
+  have hc' : c.abs = none := by
+    cases hx : c.abs with
+    | none => rfl
+    | some _ => exact absurd (by simp [hx]) hc
+  have := (fold_abs_none_iff h).mp hc' a ha
+  simp [this] at habs
 
 /-- **Pairwise suffices for `Affine`.** Over a total relative algebra, a list of
 affine effects folds to a defined value iff at most one is absolute, i.e. iff all
@@ -684,5 +706,26 @@ theorem fold_affine_isSome_iff {V M : Type*} [PCM M] [PCMTotal M] (l : List (Aff
   constructor <;> intro h <;> refine h.imp ?_ <;> intro a b
   · exact (Affine.mul_isSome_iff a b).mp
   · exact (Affine.mul_isSome_iff a b).mpr
+
+/-- **Two absolute assignments conflict** (one direction, no totality): an
+`Affine` fold over *any* relative algebra whose list contains two absolute
+elements is undefined.  This is the sentence "two absolute assignments
+conflict" exactly; the converse (at most one absolute ⇒ defined) is
+`fold_affine_isSome_iff` and needs `PCMTotal M`.  (SA-Pass gaps G4, G5.) -/
+theorem two_absolutes_conflict {V M : Type*} [PCM M] {l : List (Affine V M)}
+    {a b : Affine V M} (hab : [a, b].Sublist l) (ha : a.abs.isSome) (hb : b.abs.isSome) :
+    foldList l = none := by
+  induction l with
+  | nil => simp at hab
+  | cons x l ih =>
+    rw [foldList_cons]
+    rcases List.sublist_cons_iff.mp hab with h | ⟨r, hr, hr'⟩
+    · rw [ih h]; rfl
+    · obtain ⟨rfl, rfl⟩ := List.cons.inj hr
+      have hbl : b ∈ l := hr'.subset List.mem_cons_self
+      rcases hl : foldList l with _ | c
+      · rfl
+      · simp only [Option.bind_some]
+        exact Affine.mul_eq_none_of_abs ha (Affine.fold_abs_isSome_of_mem hl hbl hb)
 
 end CategoricalInterventionsProofs

@@ -1,11 +1,11 @@
 # Generates docs/src/verified.md and fails if any listed Lean theorem is missing.
 const LEDGER = [
     ("Programs compose associatively with the empty program as identity", "compose", ["compose_assoc", "compose_nil_left", "compose_nil_right"], "test/laws.jl"),
-    ("Under a partial commutative monoid, the order of atoms never matters", "fold", ["fold_perm", "foldAt_perm", "apply_comm"], "test/laws.jl"),
+    ("Under a partial commutative monoid, the order of atoms never matters", "fold", ["fold_perm", "foldAt_perm", "apply_perm", "apply_comm"], "test/laws.jl"),
     ("For the shipped (pairwise) algebras, a program is conflict-free iff every pair of overlapping same-target atoms combines", "conflicts", ["conflictFree_of_pairwise", "pairwise_of_conflictFree", "foldList_isSome_iff_pairwise"], "test/laws.jl"),
-    ("Different targets never conflict; disjoint supports never conflict", "conflicts", ["different_target_compatible", "disjoint_compatible"], "test/core.jl"),
+    ("Different targets never conflict; disjoint supports never conflict", "conflicts", ["different_target_compatible", "disjoint_compatible'"], "test/core.jl"),
     ("Factors of a conflict-free composite are conflict-free", "compose", ["conflictFree_append_left", "conflictFree_append_right"], "test/laws.jl"),
-    ("Set-then-scale is a partial commutative monoid; two absolute assignments conflict", "Affine", ["affine_pcm", "fold_affine_isSome_iff"], "test/core.jl"),
+    ("Set-then-scale is a partial commutative monoid; two absolute assignments conflict", "Affine", ["affine_pcm", "two_absolutes_conflict"], "test/core.jl"),
     ("Under set-then-scale the absolute value is applied first, then the relative product", "Affine", ["affine_action", "affine_act_mul_of_relative"], "test/laws.jl"),
     ("Every time inside a span lies in exactly one epoch, and for span-only programs the active set is constant on an epoch", "epochs", ["epoch_cover", "active_const_on_epoch"], "test/core.jl"),
     ("Adding atoms only refines the epochs: each new epoch lies inside every old epoch it meets", "epochs", ["epochs_refine"], "test/laws.jl"),
@@ -20,10 +20,13 @@ const LEDGER = [
     ("Transfers conserve the total", "Transfer", ["transfer_preserves_sum"], "test/models.jl"),
     ("Discrete-time pulses are applied before the update", "simulate", ["pulse_before_update", "discreteStep_no_pulse"], "test/models.jl"),
     ("Flows on function-valued models are parameter intervals on a wrapped model", "augment_flow", ["augment_restrict"], "test/models.jl"),
-    ("Pushforward is functorial and preserves conflict-freeness when injective on the targets used", "pushforward", ["pushforward_comp", "conflictFree_pushforward_of_injOn"], "test/core.jl"),
-    ("Lifting to a stratified model is functorial, preserves conflict-freeness, and acts stratum-wise", "lift", ["lift_comp", "conflictFree_lift_iff'", "apply_lift"], "test/core.jl"),
+    ("Shifting a program by a delay commutes with composition and preserves conflict-freeness in both directions", "shift", ["shift_append", "shift_add", "conflictFree_shift"], "test/core.jl"),
+    ("A shifted program acts as the original acts on the correspondingly shifted schedule", "shift", ["apply_shift", "foldAt_shift"], "test/core.jl"),
+    ("Sequential composition is composition with a shifted program and inherits its laws", "seq", ["seq_assoc", "seq_nil_left", "seq_nil_right", "apply_seq", "seq_disjoint_conflictFree"], "test/core.jl"),
+    ("Pushforward is functorial and preserves conflict-freeness when injective on the targets used", "pushforward", ["pushforward_comp", "pushforward_id", "conflictFree_pushforward_of_injOn'"], "test/core.jl"),
+    ("Lifting to a stratified model is functorial, preserves conflict-freeness, and acts stratum-wise", "lift", ["lift_comp_perm", "lift_id", "conflictFree_lift", "apply_lift"], "test/core.jl"),
     ("A flow is a parameter intervention on the augmented model, unchanged on the original targets", "augment", ["augment_restrict", "augment_conflictFree_iff"], "test/models.jl"),
-    ("Inferring a program from a program's own output returns that output when re-applied", "infer", ["infer_putget", "infer_putget_grid_step"], "test/core.jl"),
+    ("Inferring a program from a program's own output returns that output when re-applied", "infer", ["infer_putget", "infer_putget_grid_step", "infer_putget_schedule"], "test/core.jl"),
 ]
 
 function generate_ledger(root::AbstractString)

@@ -154,6 +154,65 @@ end Fold
 
 /-! ## Conflict-freeness of composites -/
 
+section Factors
+variable [DecidableEq T] [PCM M]
+
+/-- **Factors are conflict-free (left).** The left factor of a conflict-free
+composite is conflict-free, for *every* PCM: by `foldAt_append` the composite
+fold is `(foldAt j P t).bind …`, which is defined only if `foldAt j P t` is.
+(No `PCMPairwise` hypothesis; SA-Pass gap G3.) -/
+theorem conflictFree_append_left {P Q : Program τ T M} (h : ConflictFree (P ++ Q)) :
+    ConflictFree P := by
+  intro t j
+  have := h t j
+  rw [foldAt_append] at this
+  rcases hP : foldAt j P t with _ | a
+  · simp [hP] at this
+  · rfl
+
+/-- **Factors are conflict-free (right).** The right factor of a conflict-free
+composite is conflict-free, for every PCM (no `PCMPairwise` hypothesis). -/
+theorem conflictFree_append_right {P Q : Program τ T M} (h : ConflictFree (P ++ Q)) :
+    ConflictFree Q := by
+  intro t j
+  have := h t j
+  rw [foldAt_append] at this
+  rcases hP : foldAt j P t with _ | a
+  · simp [hP] at this
+  · rcases hQ : foldAt j Q t with _ | b
+    · simp [hP, hQ] at this
+    · rfl
+
+/-- Both factors of a conflict-free composite are conflict-free. -/
+theorem conflictFree_of_append {P Q : Program τ T M} (h : ConflictFree (P ++ Q)) :
+    ConflictFree P ∧ ConflictFree Q :=
+  ⟨conflictFree_append_left h, conflictFree_append_right h⟩
+
+/-- **Separated composites.** If no atom of `P` and no atom of `Q` are ever
+active at the same time on the same target, then `P ++ Q` is conflict-free iff
+both factors are: at every `(t, j)` one of the two folds is the unit. -/
+theorem conflictFree_append_iff_of_separated {P Q : Program τ T M}
+    (hsep : ∀ a ∈ P, ∀ b ∈ Q, ∀ t, a.support.mem t → b.support.mem t → a.target ≠ b.target) :
+    ConflictFree (P ++ Q) ↔ ConflictFree P ∧ ConflictFree Q := by
+  refine ⟨conflictFree_of_append, ?_⟩
+  rintro ⟨hP, hQ⟩ t j
+  rw [foldAt_append]
+  by_cases hex : ∃ a ∈ P, a.support.mem t ∧ a.target = j
+  · obtain ⟨a, ha, hta, hj⟩ := hex
+    have hQ1 : foldAt j Q t = some one :=
+      foldAt_eq_one_of_none j Q t (fun b hb htb e => hsep a ha b hb t hta htb (hj.trans e.symm))
+    rw [hQ1]
+    obtain ⟨x, hx⟩ := Option.isSome_iff_exists.mp (hP t j)
+    simp [hx, mul_one]
+  · push Not at hex
+    have hP1 : foldAt j P t = some one :=
+      foldAt_eq_one_of_none j P t (fun a ha hta => hex a ha hta)
+    rw [hP1]
+    obtain ⟨y, hy⟩ := Option.isSome_iff_exists.mp (hQ t j)
+    simp [hy, one_mul]
+
+end Factors
+
 section ConflictFree
 variable [DecidableEq T] [PCM M] [PCMPairwise M]
 
@@ -162,16 +221,6 @@ creates conflicts).  Requires the pairwise property of the PCM. -/
 theorem conflictFree_sublist {P Q : Program τ T M} (h : P.Sublist Q)
     (hQ : ConflictFree Q) : ConflictFree P :=
   fun t j => foldList_sublist (effectsAt_sublist h j t) (hQ t j)
-
-/-- The left factor of a conflict-free composite is conflict-free. -/
-theorem conflictFree_append_left {P Q : Program τ T M} (h : ConflictFree (P ++ Q)) :
-    ConflictFree P :=
-  conflictFree_sublist (List.sublist_append_left P Q) h
-
-/-- The right factor of a conflict-free composite is conflict-free. -/
-theorem conflictFree_append_right {P Q : Program τ T M} (h : ConflictFree (P ++ Q)) :
-    ConflictFree Q :=
-  conflictFree_sublist (List.sublist_append_right P Q) h
 
 /-- Pairwise compatibility: every two active atoms on the same target have a
 defined product.  This is what the `O(n²)` conflict check computes. -/
@@ -222,11 +271,19 @@ theorem different_target_compatible {a b : Atom τ T M} (h : a.target ≠ b.targ
     ConflictFree [a, b] :=
   conflictFree_pair (fun _ _ _ hj => absurd hj h)
 
-/-- Two atoms with disjoint span supports never conflict. -/
+/-- **Disjoint supports never conflict**, for arbitrary supports (spans or
+instants): two atoms that are never simultaneously active are conflict-free,
+whatever their targets and effects.  (SA-Pass gap G2.) -/
+theorem disjoint_compatible' {a b : Atom τ T M}
+    (h : ∀ t, ¬ (a.support.mem t ∧ b.support.mem t)) : ConflictFree [a, b] :=
+  conflictFree_pair (fun t hta htb _ => absurd ⟨hta, htb⟩ (h t))
+
+/-- Two atoms with disjoint span supports never conflict (corollary of
+`disjoint_compatible'`). -/
 theorem disjoint_compatible {a b : Atom τ T M} {s s' : Span τ}
     (ha : a.support = .span s) (hb : b.support = .span s') (h : s.Disjoint s') :
     ConflictFree [a, b] :=
-  conflictFree_pair (fun t hta htb _ => by
+  disjoint_compatible' (fun t ⟨hta, htb⟩ => by
     rw [ha] at hta
     rw [hb] at htb
     exact absurd htb (h.not_mem hta))

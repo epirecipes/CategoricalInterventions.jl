@@ -45,6 +45,17 @@ succeeds with zero warnings and zero `sorry`; files are
 `proofs/CategoricalInterventionsProofs/SAPass/{Check,Common,C01_Compose,…,C23_Infer}.lean`
 with root `proofs/CategoricalInterventionsProofs/SAPass.lean`.
 
+**Second pass (strengthening).** Every gap of Section 4 was then closed by
+adding a stronger (or one-directional) theorem to the main development (or, for
+G3, restating the theorem without its spurious hypothesis), and the affected
+rows were re-run against the new targets in `C24_Strengthened.lean` (G3 in
+`C05_Factors.lean`), reusing the original shadow sets unchanged plus four extra
+shadows.  Two new claims for the new `Shift.lean` module are audited in
+`C25_Shift.lean` (Section 6).  After the second pass the build has 166 forward
+and 63 backward checkers, all syntactically identical to the statements they
+copy.  Section 2 keeps the original rows (marked *superseded*) and adds the new
+ones; Section 3 reports both aggregates.
+
 ## 2. Results per target theorem
 
 Columns: claim number; theorem; number of shadows; forward checkers passed /
@@ -57,16 +68,21 @@ total; backward checker passed; SA-Pass; SA-Pass_soft; note.
 | 1 | `compose_nil_right` | 2 | 2/2 | yes | 1 | 1.000 | position-wise and `Std.LawfulRightIdentity` |
 | 2 | `fold_perm` | 3 | 3/3 | yes | 1 | 1.000 | adjacent swap, reverse, multiset; bwd by `Perm` induction from swaps |
 | 2 | `foldAt_perm` | 3 | 3/3 | yes | 1 | 1.000 | same three facets on programs |
-| 2 | `apply_comm` | 2 | 1/2 | yes | 0 | 0.750 | **gap G1**: block swap = rotation invariance, weaker than "order never matters" |
+| 2 | `apply_comm` | 2 | 1/2 | yes | 0 | 0.750 | **gap G1** (closed); superseded by `apply_perm` |
+| 2 | `apply_perm` (new) | 2 | 2/2 | yes | 1 | 1.000 | same shadows; `apply_comm` is now its corollary |
 | 3 | `conflictFree_of_pairwise` | 2 | 2/2 | yes | 1 | 1.000 | sentence omits the `PCMPairwise` side condition (S1) |
 | 3 | `pairwise_of_conflictFree` | 2 | 2/2 | yes | 1 | 1.000 | idem |
 | 3 | `foldList_isSome_iff_pairwise` | 3 | 3/3 | yes | 1 | 1.000 | both halves plus sublist closure |
 | 4 | `different_target_compatible` | 2 | 2/2 | yes | 1 | 1.000 | pairwise phrasing; `Reject` instance pins "regardless of effects/supports" |
-| 4 | `disjoint_compatible` | 3 | 2/3 | yes | 0 | 0.833 | **gap G2**: theorem covers span/span only; sentence covers instants |
-| 5 | `conflictFree_append_left` | 2 | 1/2 | yes | 0 | 0.750 | **gap G3**: unnecessary `PCMPairwise` hypothesis |
-| 5 | `conflictFree_append_right` | 2 | 1/2 | yes | 0 | 0.750 | **gap G3** |
+| 4 | `disjoint_compatible` | 3 | 2/3 | yes | 0 | 0.833 | **gap G2** (closed); superseded by `disjoint_compatible'` |
+| 4 | `disjoint_compatible'` (new) | 3 | 3/3 | yes | 1 | 1.000 | arbitrary supports; span version is a corollary |
+| 5 | `conflictFree_append_left` (original, with `PCMPairwise`) | 2 | 1/2 | yes | 0 | 0.750 | **gap G3** (closed); superseded by the restated theorem below |
+| 5 | `conflictFree_append_right` (original, with `PCMPairwise`) | 2 | 1/2 | yes | 0 | 0.750 | **gap G3** (closed); superseded by the restated theorem below |
+| 5 | `conflictFree_append_left` (restated, every PCM) | 2 | 2/2 | yes | 1 | 1.000 | `fwd_facL_1` now compiles |
+| 5 | `conflictFree_append_right` (restated, every PCM) | 2 | 2/2 | yes | 1 | 1.000 | `fwd_facR_1` now compiles |
 | 6 | `affine_pcm` | 3 | 3/3 | yes | 1 | 1.000 | existence of a PCM structure, two-sided unit, assoc-where-defined |
-| 6 | `fold_affine_isSome_iff` | 2 | 1/2 | no | 0 | 0.250 | **gaps G4, G5**: `PCMTotal` needed for the fold form; sentence claims only "⇒" |
+| 6 | `fold_affine_isSome_iff` | 2 | 1/2 | no | 0 | 0.250 | **gaps G4, G5** (closed); superseded by `two_absolutes_conflict` for the sentence; kept as the (stronger, total-algebra) converse |
+| 6 | `two_absolutes_conflict` (new) | 2 | 2/2 | yes | 1 | 1.000 | no `PCMTotal`; bwd by sublist induction from the two-element shadow |
 | 7 | `affine_action` | 3 | 3/3 | yes | 1 | 1.000 | absolute present / absent / surviving a product |
 | 7 | `affine_act_mul_of_relative` | 2 | 2/2 | yes | 1 | 1.000 | bwd by case split on the absolute part |
 | 8 | `epoch_cover` | 3 | 3/3 | yes | 1 | 1.000 | existence, uniqueness, unfolded hypothesis |
@@ -90,17 +106,26 @@ total; backward checker passed; SA-Pass; SA-Pass_soft; note.
 | 18 | `transfer_preserves_sum` | 3 | 3/3 | yes | 1 | 1.000 | difference form, two and n transfers |
 | 19 | `pulse_before_update` | 3 | 3/3 | yes | 1 | 1.000 | definitional; shallow shadow set (T3) |
 | 19 | `discreteStep_no_pulse` | 3 | 3/3 | yes | 1 | 1.000 | definitional; shallow shadow set (T3) |
-| 20 | `pushforward_comp` | 3 | 2/3 | yes | 0 | 0.833 | **gap G6**: identity law of "functorial" absent |
-| 20 | `conflictFree_pushforward_of_injOn` | 2 | 2/2 | no | 0 | 0.500 | **gap G7**: theorem is an `↔`; sentence says "preserves" |
-| 21 | `lift_comp` | 3 | 1/3 | yes | 0 | 0.667 | **gaps G8, G9**: fold-level only; identity law absent |
-| 21 | `conflictFree_lift_iff'` | 2 | 2/2 | no | 0 | 0.500 | **gap G10**: theorem is an `↔`; sentence matches `conflictFree_lift` |
+| 20 | `pushforward_comp` (original scoring) | 3 | 2/3 | yes | 0 | 0.833 | **gap G6** (closed); superseded by the re-scored row + `pushforward_id` |
+| 20 | `pushforward_comp` (re-scored: identity shadow moved) | 2 | 2/2 | yes | 1 | 1.000 | shadows `sh_pc_2`, `sh_pc_3`; bwd `bwd_pc'` |
+| 20 | `pushforward_id` (new) | 1 | 1/1 | yes | 1 | 1.000 | shadow `sh_pc_1` |
+| 20 | `conflictFree_pushforward_of_injOn` | 2 | 2/2 | no | 0 | 0.500 | **gap G7** (closed); superseded by `conflictFree_pushforward_of_injOn'` |
+| 20 | `conflictFree_pushforward_of_injOn'` (new) | 2 | 2/2 | yes | 1 | 1.000 | the "preserves" direction only |
+| 21 | `lift_comp` | 3 | 1/3 | yes | 0 | 0.667 | **gaps G8, G9** (closed); superseded by `lift_comp_perm` + `lift_id`; now a corollary of `lift_comp_perm` |
+| 21 | `lift_comp_perm` (new) | 2 | 2/2 | yes | 1 | 1.000 | shadows `sh_lc_1`, `sh_lc_2` |
+| 21 | `lift_id` (new) | 3 | 3/3 | yes | 1 | 1.000 | `sh_lc_3` + list-level `sh_li_1`, `sh_li_2`; equality of lists |
+| 21 | `conflictFree_lift_iff'` | 2 | 2/2 | no | 0 | 0.500 | **gap G10** (closed); superseded by `conflictFree_lift` for the sentence |
+| 21 | `conflictFree_lift` (now cited) | 2 | 2/2 | yes | 1 | 1.000 | unconditional preservation, exactly the sentence |
 | 21 | `apply_lift` | 3 | 3/3 | yes | 1 | 1.000 | effect-level, naturality, untouched strata |
 | 22 | `augment_restrict` | 3 | 3/3 | yes | 1 | 1.000 | bwd via a "recording" action on `Option M` |
 | 22 | `augment_conflictFree_iff` | 4 | 4/4 | yes | 1 | 1.000 | three directions plus single-flow instance |
-| 23 | `infer_putget` | 4 | 3/4 | yes | 0 | 0.875 | **gap G11**: only at cell starts |
+| 23 | `infer_putget` | 4 | 3/4 | yes | 0 | 0.875 | **gap G11** (closed); superseded by `infer_putget_schedule` for the whole-schedule reading |
+| 23 | `infer_putget_schedule` (new) | 3 | 3/3 | yes | 1 | 1.000 | `sh_ip_1` + epoch-start and `Set.EqOn` facets |
 | 23 | `infer_putget_grid_step` | 3 | 3/3 | yes | 1 | 1.000 | grid-sampled reading; last point included |
 
 ## 3. Aggregate
+
+### 3.1 Original targets (first pass)
 
 | Metric | Value |
 |--------|-------|
@@ -118,10 +143,37 @@ The 10 targets with SA-Pass = 0 are `apply_comm`, `disjoint_compatible`,
 `pushforward_comp`, `conflictFree_pushforward_of_injOn`, `lift_comp`,
 `conflictFree_lift_iff'`, `infer_putget`.
 
+### 3.2 After strengthening (second pass)
+
+The cited target set is the original one with each of the 10 failing rows
+replaced by its successor(s): `apply_perm`, `disjoint_compatible'`, the two
+restated `conflictFree_append_*`, `two_absolutes_conflict`, `pushforward_comp`
+(re-scored) + `pushforward_id`, `conflictFree_pushforward_of_injOn'`,
+`lift_comp_perm` + `lift_id`, `conflictFree_lift`, `infer_putget_schedule`
+(47 − 10 + 12 = 49 targets).  The 37 unchanged rows keep their scores.
+
+| Metric | Claims 1–23 after strengthening | + Section 6 (claims 24–25) |
+|--------|------|------|
+| targets tested | 49 (23 claims) | 58 (25 claims) |
+| shadows written | 133 (129 + `sh_li_1`, `sh_li_2`, `sh_ips_2`, `sh_ips_3`) | 157 |
+| forward checkers | 130/130 = 1.000 | 154/154 = 1.000 |
+| backward checkers | 49/49 | 58/58 |
+| **SA-Pass rate** | 49/49 = **1.000** | 58/58 = **1.000** |
+| **mean SA-Pass_soft** | **1.000** | **1.000** |
+
+(Build totals including the superseded rows' checkers: 166 forward and 63
+backward checkers compile; none omitted for a cited target.)
+
 ## 4. Alignment gaps
 
 Each gap is a checker that was not written because it cannot be proved. "NL"
 is the sentence in `docs/ledger.jl`; "Lean" is the target's actual statement.
+
+Status after the second pass: **all eleven gaps closed** (G1, G2, G3, G4, G6,
+G8, G9, G11 by a new/restated theorem that the sentence now matches; G5, G7,
+G10 by adding the one-directional theorem the sentence describes and citing it,
+leaving the stronger `↔` theorems in place).  The closing theorem is named at
+the end of each entry.
 
 **G1 — `apply_comm` is rotation invariance, not permutation invariance**
 (forward `fwd_apply_1` omitted; shadow `sh_apply_1 : P.Perm Q → apply P θ = apply Q θ`).
@@ -135,6 +187,8 @@ true (it follows from `foldAt_perm`, which the row also cites, in two lines,
 and is `sh_apply_1`), so the fix is a stronger theorem: add
 `apply_perm : P.Perm Q → apply P θ = apply Q θ` and cite it instead of, or in
 addition to, `apply_comm`.
+*Closed:* `apply_perm` (`Semantics.lean`); `apply_comm` is its corollary.
+Checkers `fwd_apply'_1/2`, `bwd_apply'` (`C24`).
 
 **G2 — `disjoint_compatible` covers only two span supports**
 (forward `fwd_dj_1` omitted; shadow `sh_dj_1 : (∀ t, ¬(a.support.mem t ∧ b.support.mem t)) → ConflictFree [a, b]`).
@@ -145,6 +199,8 @@ statement is true (`sh_dj_1`, four lines). Fix: state `disjoint_compatible`
 with the hypothesis `∀ t, ¬(a.support.mem t ∧ b.support.mem t)` (or
 `Disjoint a.support.memSet b.support.memSet`) and keep the span version as a
 corollary.
+*Closed:* `disjoint_compatible'` (`Program.lean`), span version kept as
+`disjoint_compatible`.  Checkers `fwd_dj'_1/2/3`, `bwd_dj'` (`C24`).
 
 **G3 — `conflictFree_append_left/right` carry an unnecessary `PCMPairwise M`**
 (forward `fwd_facL_1`, `fwd_facR_1` omitted; shadows `sh_facL_1`, `sh_facR_1`
@@ -157,6 +213,9 @@ and inherit its pairwise hypothesis, so they cannot be instantiated in the
 shadow's context. The sentence is stronger. Fix: reprove both theorems from
 `foldAt_append` without `[PCMPairwise M]` (the proofs are
 `SAPass.conflictFree_of_append_left/right` in `Common.lean`).
+*Closed:* both theorems restated in `Program.lean` for every PCM (same
+names; the `PCMPairwise` argument is simply gone, so every caller still
+compiles); `fwd_facL_1`, `fwd_facR_1` added in `C05`.
 
 **G4 — `fold_affine_isSome_iff` needs `PCMTotal M`; "two absolutes conflict" does not**
 (forward `fwd_aabs_1` omitted; shadow `sh_aabs_1 : a.abs.isSome → b.abs.isSome → mul a b = none` for any `PCM M`).
@@ -165,6 +224,9 @@ algebra (it is a property of `absMul`), but the target requires
 `[PCMTotal M]`, so it cannot be instantiated. The sentence is stronger on this
 facet. Fix: add the two-element lemma `Affine.mul_eq_none_of_abs` (no
 totality) and cite it for this half of the sentence.
+*Closed:* `Affine.mul_eq_none_of_abs` (two elements) and
+`two_absolutes_conflict` (fold with two absolutes is `none`, any relative
+algebra), `PCM.lean`.  Checkers `fwd_aabs'_1/2`, `bwd_aabs'` (`C24`).
 
 **G5 — the sentence claims one direction; `fold_affine_isSome_iff` is an `↔`**
 (backward `bwd_aabs` omitted).
@@ -174,12 +236,16 @@ two atoms are both absolute, the fold is defined"), which is the `←`
 direction of the theorem and is where totality of `M` is actually needed.
 The theorem is stronger than the sentence. Fix the sentence: "over a total
 relative algebra, an affine fold is defined iff at most one atom is absolute".
+*Closed:* the sentence's one direction is now `two_absolutes_conflict`, whose
+backward checker compiles; `fold_affine_isSome_iff` remains as the converse.
 
 **G6 — "functorial" includes the identity law; `pushforward_comp` is only composition**
 (forward `fwd_pc_1` omitted; shadow `sh_pc_1 : pushforward id P = P`).
 NL: "pushforward is functorial". Lean: the composition law only. The identity
 law is true (by structure eta, two lines) but not stated. Fix: add
 `pushforward_id` and cite both.
+*Closed:* `pushforward_id` (`Transport.lean`); `sh_pc_1` is its shadow, and
+`pushforward_comp` re-scored on `sh_pc_2`, `sh_pc_3` (`bwd_pc'`, `C24`).
 
 **G7 — "preserves" vs `↔` for `conflictFree_pushforward_of_injOn`**
 (backward `bwd_cp` omitted).
@@ -187,6 +253,8 @@ NL: "preserves conflict-freeness when injective on the targets used" is
 one-directional; the theorem also *reflects* conflict-freeness. Theorem
 stronger than sentence. Fix the sentence: "…preserves and reflects
 conflict-freeness…".
+*Closed:* `conflictFree_pushforward_of_injOn'` (`Transport.lean`) states the
+"preserves" direction; its checkers `fwd_cp'_1/2`, `bwd_cp'` pass (`C24`).
 
 **G8 — `lift_comp` is functoriality at the level of folds only**
 (forward `fwd_lc_1` omitted; shadow `sh_lc_1 : (lift π' (lift π P)).Perm (lift (π ∘ π') P)`).
@@ -198,11 +266,17 @@ permutation (`sh_lc_1`, proved here via nodup fibres; strict list equality is
 false because fibres are enumerated in `Finset.toList` order). Fix: add
 `lift_comp_perm` (the statement of `sh_lc_1`) and derive `lift_comp` from it
 with `foldAt_perm`, which is exactly what `bwd_lc` does.
+*Closed:* `lift_comp_perm` and `fibre_comp_perm` (`Transport.lean`);
+`lift_comp` is now `foldAt_perm (lift_comp_perm …)`.  Checkers `fwd_lcp_1/2`,
+`bwd_lcp` (`C24`).
 
 **G9 — identity law of lift absent**
 (forward `fwd_lc_3` omitted; shadow `sh_lc_3 : foldAt j (lift id P) t = foldAt j P t`).
 Same as G6 for `lift`. The law holds (`lift id P = P` as lists, in fact).
 Fix: add `lift_id`.
+*Closed:* `lift_id : lift id P = P` (list equality, via `fibre_id`),
+`Transport.lean`.  Shadows `sh_lc_3`, `sh_li_1`, `sh_li_2`; checkers
+`fwd_li_1/2/3`, `bwd_li` (`C24`).
 
 **G10 — `conflictFree_lift_iff'` vs "preserves conflict-freeness"**
 (backward `bwd_cl` omitted).
@@ -215,6 +289,9 @@ leaves `lift π P` unchanged (`lift_filter_eq`) and satisfies the hypothesis,
 so the conditional theorem implies the unconditional one. Fix: cite
 `conflictFree_lift` for "preserves" and reword the `_iff'` citation as
 "…and reflects it when every used target has a preimage".
+*Closed:* `conflictFree_lift` (unchanged statement, now documented) is the
+cited theorem for "preserves"; its checkers `fwd_cl'_1/2`, `bwd_cl'` pass
+(`C24`).
 
 **G11 — `infer_putget` holds only at cell starts**
 (forward `fwd_ip_1` omitted; shadow `sh_ip_1`: for a span-only `P`, constant
@@ -231,6 +308,9 @@ either add `infer_putget_epochs` (the statement of `sh_ip_1`) or reword the
 sentence to "…returns that output at the start of every cell / at every grid
 point". The grid theorem `infer_putget_grid_step` is aligned with the sampled
 reading (all its checkers pass).
+*Closed:* `infer_putget_schedule` (`Infer.lean`; `foldAt_infer_mem` moved
+there from `C23`, `foldAt_infer` is its instance at `c.lo`).  Checkers
+`fwd_ips_1/2/3`, `bwd_ips` (`C24`).
 
 ### Sentence-side observations (no checker failed; the shadows carry the hypothesis)
 
@@ -317,8 +397,72 @@ corrections rather than theorem gaps.
   hypothesis that unfolds to the target; in this audit every copy was also
   syntactically identical (reported by the checker), so this loophole was not
   exercised.
+- **Second-pass bias.** In the second pass the same author wrote the
+  strengthened theorems *and* re-ran the checkers, so a theorem could in
+  principle have been shaped to the shadows.  Mitigation: the shadow sets of
+  the re-run rows are the original ones, written before the new theorems
+  existed (only four shadows were added, all list-level or instance facets);
+  the checkers forbid the superseded theorem, its restatements and the glue
+  that proves the new theorem (`Affine.mul_eq_none_of_abs`,
+  `Affine.fold_abs_isSome_of_mem`, `fibre_comp_perm`, `fibre_id`,
+  `foldAt_infer_mem`).  For Section 6 the shadows and theorems were written
+  together, so those rows carry the full author bias.
 - **Glue lemmas.** `Common.lean` and a few per-file helpers (`restrict_fold`,
-  `foldAt_infer_mem`, `fibre_comp_perm`, `lift_filter_eq`, `foldAt_filter_of`,
-  `abs_of_mul`, `sum_transfer`) are re-proofs from the definitions; where a
+  `lift_filter_eq`, `foldAt_filter_of`, `abs_of_mul`, `sum_transfer`; and now
+  `foldAt_infer_mem`, `fibre_comp_perm` in the main development) are re-proofs
+  from the definitions; where a
   glue lemma is a restatement of a target (`restrict_fold`, `sum_transfer`)
   it is forbidden in that target's checkers.
+
+## 6. Shift and sequence (`Shift.lean`, `C25_Shift.lean`)
+
+The new module `proofs/CategoricalInterventionsProofs/Shift.lean` formalises
+the Julia `shift(program, δ)` and `seq(p, q; gap)`: `Span.shift`,
+`Instant.shift`, `Support.shift`, `Atom.shift`, `shift δ P := P.map (Atom.shift δ)`
+and `seq P Q δ := P ++ shift δ Q` (the Julia `seq` computes `δ` from the
+extents; the laws hold for every explicit `δ`), for a timeline
+`[AddCommGroup τ] [LinearOrder τ] [IsOrderedAddMonoid τ]` (ℝ, ℤ, ℚ).
+Theorems: `shift_zero`, `shift_add`, `shift_append`, `shift_nil`, `shift_cons`,
+`mem_shift_iff`, `Support.mem_shift`, `mem_shift`, `active_shift`,
+`effectsAt_shift`, `foldAt_shift`, `conflictFree_shift`, `apply_shift`,
+`apply_shift'`, `apply_shift_translate`, `seq_assoc`, `seq_nil_left`,
+`seq_nil_right`, `seq_zero`, `conflictFree_of_seq`, `seq_disjoint_conflictFree`,
+`apply_seq` (and `conflictFree_append_iff_of_separated` in `Program.lean`).
+`conflictFree_seq_iff` without a separation hypothesis is not expected and not
+stated: overlap after shifting can create conflicts.
+
+Two natural-language claims were audited with the same procedure.
+
+**Claim 24.** "Shift commutes with composition, preserves conflict-freeness,
+and acts by translating the schedule."  Targets `shift_append`,
+`conflictFree_shift`, `apply_shift`.  Reading: "preserves" for the invertible
+`shift δ` is preservation; reflection follows (`shift (−δ)` undoes `shift δ`),
+so `bwd_cs` uses only the preservation shadow, with `shift_add`/`shift_zero` as
+glue.  The unit facet `shift δ [] = []` is derived from `shift_append` alone
+(`fwd_sa_3`: `l = l ++ l ⇒ l = []`).
+
+**Claim 25.** "Sequence inherits the laws of composition and shift."  Targets
+`seq_assoc`, `seq_nil_left`, `seq_nil_right`, `conflictFree_of_seq`,
+`seq_disjoint_conflictFree`, `apply_seq`.  Reading: associativity and units of
+`++`; factors of a conflict-free sequence are conflict-free unconditionally,
+and conversely under temporal separation (shadow `sh_sd_2` is the intended
+use, `Q` delayed past the end of `P`); the action is `apply_append` composed
+with `apply_shift` (`sh_aq_1`), in either order (`sh_aq_2`, derived from the
+target via `apply_comm` applied to the swapped sequence `seq (shift δ Q) P 0`).
+
+| # | Theorem | Shadows | Fwd | Bwd | SA-Pass | Soft | Note |
+|---|---------|:-------:|:---:|:---:|:-------:|:----:|------|
+| 24 | `shift_append` | 3 | 3/3 | yes | 1 | 1.000 | membership, position-wise, unit |
+| 24 | `conflictFree_shift` | 3 | 3/3 | yes | 1 | 1.000 | preservation, pair instance, reflection; bwd from preservation alone |
+| 24 | `apply_shift` | 3 | 3/3 | yes | 1 | 1.000 | schedule form, translated locality, translated baseline |
+| 25 | `seq_assoc` | 3 | 3/3 | yes | 1 | 1.000 | position-wise, membership, fold-level |
+| 25 | `seq_nil_left` | 2 | 2/2 | yes | 1 | 1.000 | position-wise, empty sequence |
+| 25 | `seq_nil_right` | 2 | 2/2 | yes | 1 | 1.000 | position-wise, action |
+| 25 | `conflictFree_of_seq` | 3 | 3/3 | yes | 1 | 1.000 | left factor, right factor, shifted right factor |
+| 25 | `seq_disjoint_conflictFree` | 3 | 3/3 | yes | 1 | 1.000 | ← under separation (proved from `foldAt_append`), temporal-separation instance, → |
+| 25 | `apply_seq` | 2 | 2/2 | yes | 1 | 1.000 | `P` then translated `Q`; other order via `apply_comm` |
+
+Aggregate for Section 6: 9 targets, 24 shadows (all proved independently of
+every target of their claim), 24/24 forward, 9/9 backward, SA-Pass 9/9,
+mean soft 1.000.  Caveats: shadows and theorems were written together (see
+Section 5); the `seq_nil_*` rows are near-definitional (T3-style).

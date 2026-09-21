@@ -23,27 +23,6 @@ open CategoricalInterventionsProofs
 
 universe u v w
 
-/-- Glue: `foldAt_infer` at every time of a cell, not only at its start. -/
-theorem foldAt_infer_mem {τ : Type u} {T : Type v} {G : Type w} [LinearOrder τ] [DecidableEq T]
-    [Fintype T] [CommGroup G] {cells : List (Span τ)} (hd : cells.Pairwise Span.Disjoint)
-    {c : Span τ} (hc : c ∈ cells) {t : τ} (ht : c.mem t) (θ0 θ1 : τ → T → G) (j : T) :
-    foldAt j (infer cells θ0 θ1) t = some ⟨θ1 c.lo j / θ0 c.lo j⟩ := by
-  induction cells with
-  | nil => simp at hc
-  | cons c' rest ih =>
-    have hdis : ∀ c'' ∈ rest, c'.Disjoint c'' := (List.pairwise_cons.mp hd).1
-    have hrest := hd.of_cons
-    simp only [infer, List.flatMap_cons]
-    rw [← infer, foldAt_append, foldAt_inferCell]
-    rcases List.mem_cons.mp hc with rfl | hc
-    · rw [if_pos ht, foldAt_infer_eq_one]
-      · simp [mul_one]
-      · intro c'' hc'' hm
-        exact (hdis c'' hc'').not_mem ht hm
-    · have : ¬ c'.mem t := fun hm => (hdis c hc).not_mem hm ht
-      rw [if_neg this, ih hrest hc]
-      simp [one_mul]
-
 /-! ## Shadows for `infer_putget` -/
 
 /-- NL (full reading): inferring from a span-only program's own output on a

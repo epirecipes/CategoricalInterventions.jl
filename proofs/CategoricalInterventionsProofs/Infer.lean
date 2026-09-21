@@ -73,10 +73,11 @@ theorem foldAt_infer_eq_one {cells : List (Span τ)} (θ0 θ1 : τ → T → G) 
     rw [hs]
     exact h c hc)
 
-/-- At the start of a cell, the inferred fold on `j` is exactly the ratio there. -/
-theorem foldAt_infer {cells : List (Span τ)} (hd : cells.Pairwise Span.Disjoint)
-    {c : Span τ} (hc : c ∈ cells) (θ0 θ1 : τ → T → G) (j : T) :
-    foldAt j (infer cells θ0 θ1) c.lo = some ⟨θ1 c.lo j / θ0 c.lo j⟩ := by
+/-- At every time of a cell, the inferred fold on `j` is the ratio at the cell's
+start. -/
+theorem foldAt_infer_mem {cells : List (Span τ)} (hd : cells.Pairwise Span.Disjoint)
+    {c : Span τ} (hc : c ∈ cells) {t : τ} (ht : c.mem t) (θ0 θ1 : τ → T → G) (j : T) :
+    foldAt j (infer cells θ0 θ1) t = some ⟨θ1 c.lo j / θ0 c.lo j⟩ := by
   induction cells with
   | nil => simp at hc
   | cons c' rest ih =>
@@ -85,13 +86,19 @@ theorem foldAt_infer {cells : List (Span τ)} (hd : cells.Pairwise Span.Disjoint
     simp only [infer, List.flatMap_cons]
     rw [← infer, foldAt_append, foldAt_inferCell]
     rcases List.mem_cons.mp hc with rfl | hc
-    · rw [if_pos (span_lo_mem c), foldAt_infer_eq_one]
+    · rw [if_pos ht, foldAt_infer_eq_one]
       · simp [mul_one]
       · intro c'' hc'' hm
-        exact (hdis c'' hc'').not_mem (span_lo_mem c) hm
-    · have : ¬ c'.mem c.lo := fun hm => (hdis c hc).not_mem hm (span_lo_mem c)
+        exact (hdis c'' hc'').not_mem ht hm
+    · have : ¬ c'.mem t := fun hm => (hdis c hc).not_mem hm ht
       rw [if_neg this, ih hrest hc]
       simp [one_mul]
+
+/-- At the start of a cell, the inferred fold on `j` is exactly the ratio there. -/
+theorem foldAt_infer {cells : List (Span τ)} (hd : cells.Pairwise Span.Disjoint)
+    {c : Span τ} (hc : c ∈ cells) (θ0 θ1 : τ → T → G) (j : T) :
+    foldAt j (infer cells θ0 θ1) c.lo = some ⟨θ1 c.lo j / θ0 c.lo j⟩ :=
+  foldAt_infer_mem hd hc (span_lo_mem c) θ0 θ1 j
 
 /-- **Put-get.** Applying the inferred program to the baseline reproduces the
 observed schedule at the start of every cell. -/
@@ -100,6 +107,25 @@ theorem infer_putget {cells : List (Span τ)} (hd : cells.Pairwise Span.Disjoint
     apply (infer cells θ0 θ1) θ0 c.lo j = θ1 c.lo j := by
   simp only [apply, foldAt_infer hd hc, actOpt_some, Multiplicative.act_def]
   exact div_mul_cancel _ _
+
+/-- **Put-get for a whole schedule.** Inferring from a span-only program's own
+output on a constant baseline, with the program's epochs as cells, and
+re-applying to the baseline returns that output at *every* time of every epoch
+(not only at cell starts): inside an epoch the output is constant
+(`apply_const_on_epoch`) and the inferred fold is the ratio at the epoch's start
+(`foldAt_infer_mem`).  Without these hypotheses (a ratio varying inside a cell)
+the whole-schedule reading is false, which is why `infer_putget` is stated at
+cell starts.  (SA-Pass gap G11.) -/
+theorem infer_putget_schedule {P : Program τ T (Multiplicative G)} (hP : SpanOnly P)
+    (θ0 : T → G) {e : Span τ} (he : e ∈ epochs P) {t : τ} (ht : e.mem t) :
+    apply (infer (epochs P) (fun _ => θ0) (apply P (fun _ => θ0))) (fun _ => θ0) t =
+      apply P (fun _ => θ0) t := by
+  funext j
+  have hd := epochs_pairwise_disjoint P
+  simp only [apply, foldAt_infer_mem hd he ht, actOpt_some, Multiplicative.act_def]
+  change apply P (fun _ => θ0) e.lo j / θ0 j * θ0 j = _
+  rw [div_mul_cancel]
+  exact congrFun (apply_const_on_epoch hP he (fun _ _ _ _ => rfl) (span_lo_mem e) ht) j
 
 /-- Inference on a time grid: cells are the consecutive spans of the grid. -/
 noncomputable def inferGrid (grid : List τ) (θ0 θ1 : τ → T → G) :

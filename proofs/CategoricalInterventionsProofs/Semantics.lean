@@ -126,13 +126,20 @@ theorem apply_append_affine {M : Type*} [PCM M] [PCMAction M V]
 section Comm
 variable [HasAct M V]
 
-/-- **Commutativity.** Composition order is irrelevant for the action (this holds
-for every program, conflict-free or not, since folds are permutation-invariant). -/
-theorem apply_comm (P Q : Program τ T M) (θ : τ → T → V) :
-    apply (P ++ Q) θ = apply (Q ++ P) θ := by
+/-- **Order irrelevance for the action.** Any two programs that are permutations
+of each other act identically on every schedule (for every program,
+conflict-free or not, since folds are permutation-invariant).  (SA-Pass gap G1.) -/
+theorem apply_perm {P Q : Program τ T M} (h : P.Perm Q) (θ : τ → T → V) :
+    apply P θ = apply Q θ := by
   funext t j
   simp only [apply]
-  rw [foldAt_perm List.perm_append_comm]
+  rw [foldAt_perm h]
+
+/-- **Commutativity.** Composition order is irrelevant for the action (corollary
+of `apply_perm`). -/
+theorem apply_comm (P Q : Program τ T M) (θ : τ → T → V) :
+    apply (P ++ Q) θ = apply (Q ++ P) θ :=
+  apply_perm List.perm_append_comm θ
 
 end Comm
 

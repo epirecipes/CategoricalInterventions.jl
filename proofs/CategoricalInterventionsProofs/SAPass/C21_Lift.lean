@@ -22,29 +22,6 @@ universe u v w x y
 
 /-! ## Shadows for `lift_comp` -/
 
-/-- Glue: the fibre of a composite is (up to order) the union of the fibres. -/
-theorem fibre_comp_perm {T : Type v} {T' : Type w} {T'' : Type x} [DecidableEq T]
-    [DecidableEq T'] [Fintype T'] [Fintype T''] (π : T' → T) (π' : T'' → T') (j : T) :
-    ((fibre π j).flatMap (fibre π')).Perm (fibre (π ∘ π') j) := by
-  have hnd : ((fibre π j).flatMap (fibre π')).Nodup := by
-    rw [List.nodup_flatMap]
-    refine ⟨fun j' _ => fibre_nodup π' j', ?_⟩
-    refine (fibre_nodup π j).pairwise_of_forall_ne ?_
-    intro a _ b _ hab
-    show List.Disjoint (fibre π' a) (fibre π' b)
-    rw [List.disjoint_left]
-    intro j'' ha hb
-    rw [mem_fibre] at ha hb
-    exact hab (ha.symm.trans hb)
-  rw [List.perm_ext_iff_of_nodup hnd (fibre_nodup _ _)]
-  intro j''
-  simp only [List.mem_flatMap, mem_fibre, Function.comp]
-  constructor
-  · rintro ⟨j', h1, h2⟩
-    rw [h2, h1]
-  · intro h
-    exact ⟨π' j'', h, rfl⟩
-
 /-- NL: "functorial" — composition law at the level of programs, up to
 permutation of atoms. -/
 theorem sh_lc_1 {τ : Type u} {T : Type v} {T' : Type w} {M : Type x} [LinearOrder τ]

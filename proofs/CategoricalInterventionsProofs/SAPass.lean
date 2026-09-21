@@ -23,6 +23,8 @@ import CategoricalInterventionsProofs.SAPass.C20_Pushforward
 import CategoricalInterventionsProofs.SAPass.C21_Lift
 import CategoricalInterventionsProofs.SAPass.C22_Augment
 import CategoricalInterventionsProofs.SAPass.C23_Infer
+import CategoricalInterventionsProofs.SAPass.C24_Strengthened
+import CategoricalInterventionsProofs.SAPass.C25_Shift
 
 /-!
 # SA-Pass semantic-alignment audit
